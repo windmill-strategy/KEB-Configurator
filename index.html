@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Product Selector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root {
+  --bg: #0F1114;
+  --surface: #181B20;
+  --surface-2: #1F2329;
+  --surface-3: #272B33;
+  --border: #2A2E37;
+  --border-active: #4A90D9;
+  --text-1: #E8EAED;
+  --text-2: #9AA0AB;
+  --text-3: #5F6672;
+  --accent: #4A90D9;
+  --accent-dim: rgba(74,144,217,0.12);
+  --accent-mid: rgba(74,144,217,0.25);
+  --green: #34D399;
+  --green-dim: rgba(52,211,153,0.12);
+  --amber: #FBBF24;
+  --amber-dim: rgba(251,191,36,0.12);
+  --red: #F87171;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', -apple-system, sans-serif;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: 0.18s ease;
+}
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== LAYOUT ===== */
+.app { max-width: 760px; margin: 0 auto; padding: 32px 20px 100px; }
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.app-logo {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+.app-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.app-title span { color: var(--text-3); font-weight: 400; margin-left: 6px; }
+
+/* ===== PROGRESS ===== */
+.progress { margin-bottom: 36px; }
+.progress-bar-track {
+  display: flex; gap: 3px; margin-bottom: 10px;
+}
+.progress-seg {
+  flex: 1; height: 3px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.progress-seg.done { background: var(--accent); }
+.progress-seg.active { background: var(--surface-3); }
+.progress-seg.active::after {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 50%;
+  background: var(--accent);
+  border-radius: 3px;
+  animation: prog-pulse 1.8s ease-in-out infinite;
+}
+@keyframes prog-pulse {
+  0%,100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.progress-meta {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.progress-label {
+  font-size: 12px; font-weight: 500; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.progress-count {
+  font-family: var(--mono); font-size: 12px; color: var(--text-3);
+}
+.match-count {
+  font-family: var(--mono); font-size: 12px;
+  color: var(--green);
+  background: var(--green-dim);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.match-count.warn { color: var(--amber); background: var(--amber-dim); }
+.match-count.danger { color: var(--red); background: rgba(248,113,113,0.12); }
+
+/* ===== STEP CONTENT ===== */
+.step-header { margin-bottom: 24px; }
+.step-number {
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  color: var(--accent); letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.step-title {
+  font-size: 24px; font-weight: 700;
+  letter-spacing: -0.03em; line-height: 1.2;
+  margin-bottom: 6px;
+}
+.step-desc { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+
+/* ===== OPTIONS ===== */
+.options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 32px; }
+.option {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex; align-items: center; gap: 12px;
+  user-select: none;
+}
+.option:hover {
+  border-color: var(--border-active);
+  background: var(--surface-2);
+}
+.option.selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.option.single-option {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  cursor: default;
+}
+.option-radio {
+  width: 18px; height: 18px; min-width: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  transition: all var(--transition);
+  display: flex; align-items: center; justify-content: center;
+}
+.option.selected .option-radio,
+.option.single-option .option-radio {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.option-radio::after {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--bg); opacity: 0; transition: opacity var(--transition);
+}
+.option.selected .option-radio::after,
+.option.single-option .option-radio::after { opacity: 1; }
+.option-text { font-size: 14px; font-weight: 500; }
+.option-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; font-weight: 400; }
+.single-note {
+  font-size: 12px; color: var(--text-3); margin-bottom: 20px;
+  font-style: italic;
+}
+
+/* ===== POWER SUB-STEP ===== */
+.power-unit-row {
+  display: flex; gap: 6px; margin-bottom: 16px;
+}
+.unit-btn {
+  font-family: var(--mono); font-size: 13px; font-weight: 500;
+  padding: 8px 18px; border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text-2);
+  cursor: pointer; transition: all var(--transition);
+}
+.unit-btn:hover { border-color: var(--accent); color: var(--text-1); }
+.unit-btn.active {
+  border-color: var(--accent); background: var(--accent-dim); color: var(--accent);
+}
+
+/* ===== NAV ===== */
+.nav {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.btn {
+  font-family: var(--sans); font-size: 14px; font-weight: 600;
+  border: none; border-radius: var(--radius); padding: 11px 24px;
+  cursor: pointer; transition: all var(--transition);
+  letter-spacing: 0.01em;
+}
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent; color: var(--text-3); padding: 11px 12px;
+}
+.btn-ghost:hover:not(:disabled) { color: var(--text-1); }
+.btn-primary {
+  background: var(--accent); color: #fff; margin-left: auto;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #5A9DE6;
+  box-shadow: 0 4px 16px rgba(74,144,217,0.3);
+}
+
+/* ===== RESULT ===== */
+.result-container { animation: slide-up 0.35s cubic-bezier(0.16,1,0.3,1); }
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.result-header {
+  text-align: center; margin-bottom: 32px;
+}
+.result-header h2 {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px;
+}
+.result-header p { font-size: 14px; color: var(--text-2); }
+
+.sku-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.sku-card:hover { border-color: var(--accent); }
+.sku-card.expanded { border-color: var(--accent); }
+.sku-top {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 20px;
+}
+.sku-number {
+  font-family: var(--mono); font-size: 18px; font-weight: 600;
+  letter-spacing: 0.02em; color: var(--accent);
+}
+.sku-toggle {
+  font-size: 12px; color: var(--text-3);
+  display: flex; align-items: center; gap: 4px;
+}
+.sku-toggle svg {
+  width: 16px; height: 16px;
+  transition: transform 0.2s ease;
+}
+.sku-card.expanded .sku-toggle svg { transform: rotate(180deg); }
+.sku-specs {
+  padding: 0 20px 16px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.spec-item {
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.spec-label {
+  font-size: 10px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
+}
+.spec-value {
+  font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text-1);
+}
+
+.summary-section {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-top: 24px;
+}
+.summary-section h3 {
+  font-size: 13px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px;
+}
+.summary-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px;
+}
+.summary-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.summary-row:last-child { border-bottom: none; }
+.summary-key { font-size: 13px; color: var(--text-2); }
+.summary-val { font-size: 13px; font-weight: 600; font-family: var(--mono); }
+
+.no-match {
+  text-align: center; padding: 40px 20px;
+}
+.no-match h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.no-match p { color: var(--text-2); font-size: 14px; line-height: 1.6; }
+
+/* ===== LOADING ===== */
+.loading {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 100px 20px;
+  color: var(--text-3); font-size: 14px; gap: 16px;
+}
+.spinner {
+  width: 24px; height: 24px;
+  border: 2.5px solid var(--surface-3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== PLACEHOLDER ===== */
+.placeholder-card {
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px; text-align: center;
+}
+.placeholder-card .badge {
+  display: inline-block;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--amber); background: var(--amber-dim);
+  padding: 4px 10px; border-radius: 4px; margin-bottom: 12px;
+}
+.placeholder-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+.placeholder-card p { font-size: 13px; color: var(--text-3); }
+
+/* ===== TRANSITIONS ===== */
+.fade-enter-active { animation: fade-in 0.22s ease-out; }
+.fade-leave-active { animation: fade-in 0.12s ease-in reverse; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app">
+    <!-- HEADER -->
+    <div class="app-header">
+      <div class="app-logo">F6</div>
+      <div class="app-title">Product Selector<span>v1.0</span></div>
+    </div>
+
+    <!-- LOADING -->
+    <div v-if="state === 'loading'" class="loading">
+      <div class="spinner"></div>
+      <span>Loading product data…</span>
+    </div>
+
+    <!-- ACTIVE FORM -->
+    <template v-if="state === 'active'">
+      <!-- PROGRESS -->
+      <div class="progress">
+        <div class="progress-bar-track">
+          <div v-for="(s, i) in steps" :key="i" class="progress-seg"
+               :class="{ done: i < currentIndex, active: i === currentIndex }"></div>
+        </div>
+        <div class="progress-meta">
+          <span class="progress-label">{{ steps[currentIndex].label }}</span>
+          <span class="match-count" :class="{ warn: matchCount <= 20, danger: matchCount <= 5 }">
+            {{ matchCount }} match{{ matchCount !== 1 ? 'es' : '' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- STEP -->
+      <transition name="fade" mode="out-in">
+        <div :key="currentIndex">
+          <!-- Normal steps -->
+          <template v-if="currentStep.type !== 'placeholder'">
+            <div class="step-header">
+              <div class="step-number">STEP {{ currentIndex + 1 }} / {{ steps.length }}</div>
+              <div class="step-title">{{ currentStep.label }}</div>
+              <div v-if="currentStep.desc" class="step-desc">{{ currentStep.desc }}</div>
+            </div>
+
+            <!-- Power step: unit picker -->
+            <div v-if="currentStep.id === 'power'" class="power-unit-row">
+              <button v-for="u in ['KW','HP','KVA']" :key="u"
+                      class="unit-btn" :class="{ active: powerUnit === u }"
+                      @click="powerUnit = u">{{ u }}</button>
+            </div>
+
+            <!-- Single option note -->
+            <div v-if="currentOptions.length === 1" class="single-note">
+              Only one option available based on your selections — auto-selected.
+            </div>
+
+            <!-- Options list -->
+            <div class="options">
+              <div v-for="opt in currentOptions" :key="opt"
+                   class="option"
+                   :class="{
+                     selected: selections[currentStep.id] === opt,
+                     'single-option': currentOptions.length === 1
+                   }"
+                   @click="select(currentStep.id, opt)">
+                <div class="option-radio"></div>
+                <div>
+                  <div class="option-text">{{ opt }}</div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- Placeholder step (Safety) -->
+          <template v-else>
+            <div class="step-header">
+              <div class="step-number">STEP {{ currentIndex + 1 }} / {{ steps.length }}</div>
+              <div class="step-title">{{ currentStep.label }}</div>
+            </div>
+            <div class="placeholder-card">
+              <div class="badge">Coming Soon</div>
+              <h3>{{ currentStep.label }}</h3>
+              <p>{{ currentStep.placeholderText }}</p>
+            </div>
+          </template>
+
+          <!-- NAV -->
+          <div class="nav" style="margin-top: 24px;">
+            <button class="btn btn-ghost" :disabled="currentIndex === 0" @click="back">
+              ← Back
+            </button>
+            <button class="btn btn-primary"
+                    :disabled="!canAdvance"
+                    @click="next">
+              {{ isLastStep ? 'Show Results' : 'Next →' }}
+            </button>
+          </div>
+        </div>
+      </transition>
+    </template>
+
+    <!-- RESULTS -->
+    <template v-if="state === 'results'">
+      <div class="result-container">
+        <div class="result-header">
+          <h2 v-if="finalProducts.length > 0">
+            {{ finalProducts.length === 1 ? 'Your Product' : 'Select Your Product' }}
+          </h2>
+          <p v-if="finalProducts.length > 1">{{ finalProducts.length }} products match your criteria</p>
+        </div>
+
+        <!-- No match -->
+        <div v-if="finalProducts.length === 0" class="no-match">
+          <h3>No exact match found</h3>
+          <p>Your combination of selections doesn't match any product in the catalog.<br>
+          Try going back and adjusting your choices.</p>
+          <button class="btn btn-primary" style="margin-top:20px" @click="restart">Start Over</button>
+        </div>
+
+        <!-- SKU cards -->
+        <div v-for="(p, pi) in finalProducts" :key="p['Part Number']">
+          <div class="sku-card" :class="{ expanded: expandedSku === pi }" @click="expandedSku = expandedSku === pi ? -1 : pi">
+            <div class="sku-top">
+              <div class="sku-number">{{ p['Part Number'] }}</div>
+              <div class="sku-toggle">
+                {{ expandedSku === pi ? 'Hide' : 'Show' }} specs
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </div>
+            </div>
+            <div v-if="expandedSku === pi" class="sku-specs">
+              <div class="spec-item" v-for="spec in specColumns" :key="spec">
+                <div class="spec-label">{{ formatSpecLabel(spec) }}</div>
+                <div class="spec-value">{{ p[spec] }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selections summary -->
+        <div class="summary-section" v-if="finalProducts.length > 0">
+          <h3>Your Selections</h3>
+          <div class="summary-grid">
+            <div class="summary-row" v-for="s in completedSteps" :key="s.id">
+              <span class="summary-key">{{ s.label }}</span>
+              <span class="summary-val">{{ displaySelection(s) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="nav" style="margin-top: 28px;">
+          <button class="btn btn-ghost" @click="back">← Back</button>
+          <button class="btn btn-primary" @click="restart">Start Over</button>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script>
+const { createApp, ref, computed, watch, onMounted } = Vue;
+
+createApp({
+  setup() {
+    // ---- STATE ----
+    const state = ref('loading');
+    const allProducts = ref([]);
+    const currentIndex = ref(0);
+    const selections = ref({});
+    const powerUnit = ref('KW');
+    const expandedSku = ref(0);
+
+    // ---- STEP DEFINITIONS ----
+    const steps = [
+      { id: 'voltage',    label: 'Pick Voltage',                   col: 'Voltage' },
+      { id: 'power',      label: 'Pick Power',                     col: null, desc: 'Choose a unit first, then select a power rating.' },
+      { id: 'type',       label: 'Pick Type',                      col: 'Type' },
+      { id: 'emi',        label: 'Pick EMI Option',                col: 'EMI' },
+      { id: 'housing',    label: 'Pick Housing',                   col: 'Housing' },
+      { id: 'gtr7',       label: 'Pick GTR7 Option',               col: 'GTR7' },
+      { id: 'heatsink',   label: 'Pick Heatsink',                  col: null, desc: 'Heatsink is determined by cooling method and mounting type.' },
+      { id: 'overload',   label: 'Pick Overload Characteristic',   col: 'Rated_kHz', desc: 'Select the rated switching frequency.' },
+      { id: 'control',    label: 'Pick Control',                   col: null, desc: 'Select the control interface.' },
+      { id: 'safety',     label: 'Pick Safety',                    type: 'placeholder', placeholderText: 'Safety options will be available in a future update. Click Next to continue.' },
+    ];
+
+    const powerColMap = { KW: 'Power_KW', HP: 'Power_HP', KVA: 'Power_KVA' };
+
+    const specColumns = [
+      'Power_KVA','Power_KW','Power_HP',
+      'Irated_IEC_Amps','Irated_UL_Amps',
+      'I_OL_Amps','I_OC_Amps',
+      'OL2_2kHz_A','OL2_4kHz_A','OL2_8kHz_A','OL2_12kHz_A','OL2_16kHz_A',
+      'I_OC_%','I_OL_%',
+      'OL2_2kHz_%','OL2_4kHz_%','OL2_8kHz_%','OL2_12kHz_%','OL2_16kHz_%',
+      'Rated_kHz','Max_kHz','BaseBlockTime_ms'
+    ];
+
+    // ---- FILTERING ----
+    // Products filtered by all selections UP TO (but not including) a given step index
+    function filteredUpTo(stepIdx) {
+      let products = allProducts.value;
+      for (let i = 0; i < stepIdx; i++) {
+        const step = steps[i];
+        const val = selections.value[step.id];
+        if (val == null) continue;
+
+        if (step.id === 'power') {
+          const col = powerColMap[powerUnit.value];
+          products = products.filter(p => String(p[col]) === String(val));
+        } else if (step.id === 'heatsink') {
+          // val is "cooling | mounting"
+          const [cooling, mounting] = val.split(' | ');
+          products = products.filter(p => p.Cooling === cooling && p.Mounting === mounting);
+        } else if (step.id === 'control' || step.type === 'placeholder') {
+          // These don't filter the CSV
+        } else if (step.col) {
+          products = products.filter(p => String(p[step.col]) === String(val));
+        }
+      }
+      return products;
+    }
+
+    const filteredProducts = computed(() => filteredUpTo(currentIndex.value));
+    const matchCount = computed(() => filteredProducts.value.length);
+
+    const currentStep = computed(() => steps[currentIndex.value]);
+    const isLastStep = computed(() => currentIndex.value === steps.length - 1);
+
+    // ---- OPTIONS FOR CURRENT STEP ----
+    const currentOptions = computed(() => {
+      const step = currentStep.value;
+      const pool = filteredProducts.value;
+      if (step.type === 'placeholder') return [];
+
+      if (step.id === 'power') {
+        const col = powerColMap[powerUnit.value];
+        const vals = [...new Set(pool.map(p => p[col]))];
+        return vals.sort((a, b) => parseFloat(a) - parseFloat(b)).map(String);
+      }
+
+      if (step.id === 'heatsink') {
+        const pairs = new Set();
+        pool.forEach(p => pairs.add(p.Cooling + ' | ' + p.Mounting));
+        return [...pairs].sort();
+      }
+
+      if (step.id === 'control') {
+        return ['CAN', 'EtherCAT'];
+      }
+
+      if (step.col) {
+        const vals = [...new Set(pool.map(p => String(p[step.col])))];
+        // Try numeric sort
+        const allNumeric = vals.every(v => !isNaN(parseFloat(v)));
+        if (allNumeric) return vals.sort((a, b) => parseFloat(a) - parseFloat(b));
+        return vals.sort();
+      }
+      return [];
+    });
+
+    // Auto-select when only 1 option
+    watch(currentOptions, (opts) => {
+      const step = currentStep.value;
+      if (opts.length === 1 && step.type !== 'placeholder') {
+        selections.value[step.id] = opts[0];
+      }
+    }, { immediate: false });
+
+    // ---- SELECTION ----
+    function select(stepId, val) {
+      const step = steps.find(s => s.id === stepId);
+      if (currentOptions.value.length === 1 && step?.type !== 'placeholder') return; // already auto-selected
+      selections.value[stepId] = val;
+    }
+
+    const canAdvance = computed(() => {
+      const step = currentStep.value;
+      if (step.type === 'placeholder') return true;
+      return selections.value[step.id] != null;
+    });
+
+    // ---- NAVIGATION ----
+    function next() {
+      if (isLastStep.value) {
+        state.value = 'results';
+        return;
+      }
+      currentIndex.value++;
+      // Auto-select if only one option on the new step
+      Vue.nextTick(() => {
+        const opts = currentOptions.value;
+        const step = steps[currentIndex.value];
+        if (opts.length === 1 && step.type !== 'placeholder') {
+          selections.value[step.id] = opts[0];
+        }
+      });
+    }
+
+    function back() {
+      if (state.value === 'results') {
+        state.value = 'active';
+        return;
+      }
+      if (currentIndex.value > 0) {
+        // Clear current selection
+        const step = steps[currentIndex.value];
+        delete selections.value[step.id];
+        currentIndex.value--;
+      }
+    }
+
+    function restart() {
+      currentIndex.value = 0;
+      selections.value = {};
+      powerUnit.value = 'KW';
+      expandedSku.value = 0;
+      state.value = 'active';
+    }
+
+    // ---- RESULTS ----
+    const finalProducts = computed(() => filteredUpTo(steps.length));
+
+    const completedSteps = computed(() =>
+      steps.filter(s => selections.value[s.id] != null || s.type === 'placeholder')
+    );
+
+    function displaySelection(s) {
+      if (s.type === 'placeholder') return '—';
+      const val = selections.value[s.id];
+      if (s.id === 'power') return val + ' ' + powerUnit.value;
+      return val ?? '—';
+    }
+
+    function formatSpecLabel(col) {
+      return col.replace(/_/g, ' ').replace(/%/g, '%');
+    }
+
+    // ---- LOAD CSV ----
+    onMounted(async () => {
+      try {
+        // Try loading from same directory (for deployment alongside the HTML)
+        // In development, you can also put the CSV as a Data URI or fetch from a server
+        let csvText = '';
+        try {
+          const resp = await fetch('selector_xlsx_-_pyexcel_sheet1.csv');
+          if (resp.ok) csvText = await resp.text();
+        } catch (e) {}
+
+        // Fallback: try loading from embedded data attribute
+        if (!csvText) {
+          const el = document.getElementById('csv-data');
+          if (el) csvText = el.textContent;
+        }
+
+        // Fallback: prompt file upload
+        if (!csvText) {
+          csvText = await new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,17,20,0.95);display:flex;align-items:center;justify-content:center;z-index:9999;';
+            overlay.innerHTML = `
+              <div style="text-align:center;color:#E8EAED;font-family:var(--sans);">
+                <p style="font-size:18px;font-weight:600;margin-bottom:12px;">Load Product Data</p>
+                <p style="font-size:14px;color:#9AA0AB;margin-bottom:20px;">Drop your CSV file here or click to browse</p>
+                <input type="file" id="csv-upload" accept=".csv" style="display:none" />
+                <label for="csv-upload" style="display:inline-block;padding:12px 28px;background:#4A90D9;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">Choose CSV File</label>
+              </div>`;
+            document.body.appendChild(overlay);
+            const input = overlay.querySelector('input');
+            input.addEventListener('change', (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                overlay.remove();
+                resolve(ev.target.result);
+              };
+              reader.readAsText(file);
+            });
+          });
+        }
+
+        const parsed = Papa.parse(csvText.trim(), {
+          header: true,
+          skipEmptyLines: true,
+          dynamicTyping: false, // keep everything as strings for consistent filtering
+        });
+
+        allProducts.value = parsed.data;
+        state.value = 'active';
+
+        // Auto-select first step if only one option
+        Vue.nextTick(() => {
+          const opts = currentOptions.value;
+          if (opts.length === 1) {
+            selections.value[steps[0].id] = opts[0];
+          }
+        });
+
+      } catch (err) {
+        console.error('Failed to load CSV:', err);
+      }
+    });
+
+    return {
+      state, steps, currentIndex, selections, powerUnit, expandedSku,
+      currentStep, currentOptions, filteredProducts, matchCount,
+      canAdvance, isLastStep, finalProducts, completedSteps, specColumns,
+      select, next, back, restart, displaySelection, formatSpecLabel,
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
