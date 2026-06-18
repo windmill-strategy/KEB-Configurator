@@ -6,754 +6,807 @@
 <title>Product Selector</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<!-- Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root {
-  --bg: #0F1114;
-  --surface: #181B20;
-  --surface-2: #1F2329;
-  --surface-3: #272B33;
-  --border: #2A2E37;
-  --border-active: #4A90D9;
-  --text-1: #E8EAED;
-  --text-2: #9AA0AB;
-  --text-3: #5F6672;
-  --accent: #4A90D9;
-  --accent-dim: rgba(74,144,217,0.12);
-  --accent-mid: rgba(74,144,217,0.25);
-  --green: #34D399;
-  --green-dim: rgba(52,211,153,0.12);
-  --amber: #FBBF24;
-  --amber-dim: rgba(251,191,36,0.12);
-  --red: #F87171;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'IBM Plex Sans', -apple-system, sans-serif;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --transition: 0.18s ease;
+:root{
+  --bg:#0C0D10;
+  --surface:#15171C;
+  --surface-2:#1C1F26;
+  --surface-3:#24282F;
+  --border:#2A2E37;
+  --border-hover:#3A3F4A;
+  --border-active:#4A90D9;
+  --text-1:#E8EAED;
+  --text-2:#9AA0AB;
+  --text-3:#5F6672;
+  --accent:#4A90D9;
+  --accent-dim:rgba(74,144,217,.10);
+  --accent-mid:rgba(74,144,217,.22);
+  --green:#34D399;
+  --green-dim:rgba(52,211,153,.10);
+  --amber:#FBBF24;
+  --amber-dim:rgba(251,191,36,.10);
+  --red:#F87171;
+  --red-dim:rgba(248,113,113,.10);
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',-apple-system,sans-serif;
+  --radius:8px;
+  --radius-lg:12px;
+  --transition:.18s ease;
 }
-body {
-  font-family: var(--sans);
-  background: var(--bg);
-  color: var(--text-1);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
+body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height:100vh;-webkit-font-smoothing:antialiased}
 
 /* ===== LAYOUT ===== */
-.app { max-width: 760px; margin: 0 auto; padding: 32px 20px 100px; }
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 40px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-}
-.app-logo {
-  width: 36px; height: 36px;
-  background: var(--accent);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 14px;
-  color: #fff;
-  letter-spacing: -0.5px;
-}
-.app-title { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
-.app-title span { color: var(--text-3); font-weight: 400; margin-left: 6px; }
+.app-wrapper{max-width:1200px;margin:0 auto;padding:24px 20px 100px}
+.app-header{display:flex;align-items:center;gap:12px;margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.app-logo{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:14px;color:#fff;flex-shrink:0}
+.app-title{font-size:18px;font-weight:600;letter-spacing:-.02em}
+.app-title span{color:var(--text-3);font-weight:400;margin-left:6px}
+
+/* ===== MAIN GRID ===== */
+.main-grid{display:grid;grid-template-columns:1fr 340px;gap:28px;align-items:start}
+@media(max-width:860px){.main-grid{grid-template-columns:1fr}.side-panel{display:none}}
+.main-col{min-width:0}
 
 /* ===== PROGRESS ===== */
-.progress { margin-bottom: 36px; }
-.progress-bar-track {
-  display: flex; gap: 3px; margin-bottom: 10px;
-}
-.progress-seg {
-  flex: 1; height: 3px;
-  background: var(--surface-3);
-  border-radius: 3px;
-  transition: background 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-.progress-seg.done { background: var(--accent); }
-.progress-seg.active { background: var(--surface-3); }
-.progress-seg.active::after {
-  content: '';
-  position: absolute; left: 0; top: 0; bottom: 0;
-  width: 50%;
-  background: var(--accent);
-  border-radius: 3px;
-  animation: prog-pulse 1.8s ease-in-out infinite;
-}
-@keyframes prog-pulse {
-  0%,100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-.progress-meta {
-  display: flex; justify-content: space-between; align-items: center;
-}
-.progress-label {
-  font-size: 12px; font-weight: 500; color: var(--text-3);
-  text-transform: uppercase; letter-spacing: 0.06em;
-}
-.progress-count {
-  font-family: var(--mono); font-size: 12px; color: var(--text-3);
-}
-.match-count {
-  font-family: var(--mono); font-size: 12px;
-  color: var(--green);
-  background: var(--green-dim);
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-.match-count.warn { color: var(--amber); background: var(--amber-dim); }
-.match-count.danger { color: var(--red); background: rgba(248,113,113,0.12); }
+.progress{margin-bottom:28px}
+.progress-track{display:flex;gap:3px;margin-bottom:8px}
+.progress-seg{flex:1;height:3px;background:var(--surface-3);border-radius:3px;transition:background .3s ease;overflow:hidden;position:relative}
+.progress-seg.done{background:var(--accent)}
+.progress-seg.active::after{content:'';position:absolute;left:0;top:0;bottom:0;width:50%;background:var(--accent);border-radius:3px;animation:ppulse 1.8s ease-in-out infinite}
+@keyframes ppulse{0%,100%{opacity:.5}50%{opacity:1}}
+.progress-meta{display:flex;justify-content:space-between;align-items:center}
+.progress-label{font-size:11px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
+.match-badge{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:4px}
+.match-badge.ok{color:var(--green);background:var(--green-dim)}
+.match-badge.warn{color:var(--amber);background:var(--amber-dim)}
+.match-badge.danger{color:var(--red);background:var(--red-dim)}
 
-/* ===== STEP CONTENT ===== */
-.step-header { margin-bottom: 24px; }
-.step-number {
-  font-family: var(--mono); font-size: 12px; font-weight: 500;
-  color: var(--accent); letter-spacing: 0.04em;
-  margin-bottom: 6px;
-}
-.step-title {
-  font-size: 24px; font-weight: 700;
-  letter-spacing: -0.03em; line-height: 1.2;
-  margin-bottom: 6px;
-}
-.step-desc { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+/* ===== STEP ===== */
+.step-num{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);letter-spacing:.04em;margin-bottom:4px}
+.step-title{font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1.2;margin-bottom:4px}
+.step-desc{font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:20px}
 
 /* ===== OPTIONS ===== */
-.options { display: flex; flex-direction: column; gap: 6px; margin-bottom: 32px; }
-.option {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: all var(--transition);
-  display: flex; align-items: center; gap: 12px;
-  user-select: none;
-}
-.option:hover {
-  border-color: var(--border-active);
-  background: var(--surface-2);
-}
-.option.selected {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-}
-.option.single-option {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  cursor: default;
-}
-.option-radio {
-  width: 18px; height: 18px; min-width: 18px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  transition: all var(--transition);
-  display: flex; align-items: center; justify-content: center;
-}
-.option.selected .option-radio,
-.option.single-option .option-radio {
-  border-color: var(--accent);
-  background: var(--accent);
-}
-.option-radio::after {
-  content: ''; width: 6px; height: 6px; border-radius: 50%;
-  background: var(--bg); opacity: 0; transition: opacity var(--transition);
-}
-.option.selected .option-radio::after,
-.option.single-option .option-radio::after { opacity: 1; }
-.option-text { font-size: 14px; font-weight: 500; }
-.option-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; font-weight: 400; }
-.single-note {
-  font-size: 12px; color: var(--text-3); margin-bottom: 20px;
-  font-style: italic;
-}
+.options{display:flex;flex-direction:column;gap:5px;margin-bottom:24px}
+.opt{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:11px;user-select:none}
+.opt:hover{border-color:var(--border-hover);background:var(--surface-2)}
+.opt.sel{border-color:var(--accent);background:var(--accent-dim)}
+.opt.only{border-color:var(--accent);background:var(--accent-dim);cursor:default}
+.opt-radio{width:16px;height:16px;min-width:16px;border-radius:50%;border:2px solid var(--border);transition:all var(--transition);display:flex;align-items:center;justify-content:center}
+.opt.sel .opt-radio,.opt.only .opt-radio{border-color:var(--accent);background:var(--accent)}
+.opt-radio::after{content:'';width:5px;height:5px;border-radius:50%;background:var(--bg);opacity:0;transition:opacity var(--transition)}
+.opt.sel .opt-radio::after,.opt.only .opt-radio::after{opacity:1}
+.opt-label{font-size:13px;font-weight:500}
+.single-note{font-size:11px;color:var(--text-3);margin-bottom:14px;font-style:italic}
 
-/* ===== POWER SUB-STEP ===== */
-.power-unit-row {
-  display: flex; gap: 6px; margin-bottom: 16px;
-}
-.unit-btn {
-  font-family: var(--mono); font-size: 13px; font-weight: 500;
-  padding: 8px 18px; border-radius: var(--radius);
-  border: 1.5px solid var(--border);
-  background: var(--surface); color: var(--text-2);
-  cursor: pointer; transition: all var(--transition);
-}
-.unit-btn:hover { border-color: var(--accent); color: var(--text-1); }
-.unit-btn.active {
-  border-color: var(--accent); background: var(--accent-dim); color: var(--accent);
-}
+/* ===== POWER UNIT TOGGLE ===== */
+.unit-row{display:flex;gap:5px;margin-bottom:14px}
+.unit-btn{font-family:var(--mono);font-size:12px;font-weight:500;padding:7px 18px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;transition:all var(--transition)}
+.unit-btn:hover{border-color:var(--accent);color:var(--text-1)}
+.unit-btn.on{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
 
 /* ===== NAV ===== */
-.nav {
-  display: flex; justify-content: space-between; align-items: center;
-}
-.btn {
-  font-family: var(--sans); font-size: 14px; font-weight: 600;
-  border: none; border-radius: var(--radius); padding: 11px 24px;
-  cursor: pointer; transition: all var(--transition);
-  letter-spacing: 0.01em;
-}
-.btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.btn-ghost {
-  background: transparent; color: var(--text-3); padding: 11px 12px;
-}
-.btn-ghost:hover:not(:disabled) { color: var(--text-1); }
-.btn-primary {
-  background: var(--accent); color: #fff; margin-left: auto;
-}
-.btn-primary:hover:not(:disabled) {
-  background: #5A9DE6;
-  box-shadow: 0 4px 16px rgba(74,144,217,0.3);
-}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:20px}
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;border:none;border-radius:var(--radius);padding:10px 22px;cursor:pointer;transition:all var(--transition)}
+.btn:disabled{opacity:.3;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--text-3);padding:10px 12px}
+.btn-ghost:hover:not(:disabled){color:var(--text-1)}
+.btn-primary{background:var(--accent);color:#fff;margin-left:auto}
+.btn-primary:hover:not(:disabled){background:#5A9DE6;box-shadow:0 4px 16px rgba(74,144,217,.3)}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text-2);display:inline-flex;align-items:center;gap:6px}
+.btn-outline:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
 
-/* ===== RESULT ===== */
-.result-container { animation: slide-up 0.35s cubic-bezier(0.16,1,0.3,1); }
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.result-header {
-  text-align: center; margin-bottom: 32px;
-}
-.result-header h2 {
-  font-size: 22px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 4px;
-}
-.result-header p { font-size: 14px; color: var(--text-2); }
-
-.sku-card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  margin-bottom: 10px;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-.sku-card:hover { border-color: var(--accent); }
-.sku-card.expanded { border-color: var(--accent); }
-.sku-top {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 20px;
-}
-.sku-number {
-  font-family: var(--mono); font-size: 18px; font-weight: 600;
-  letter-spacing: 0.02em; color: var(--accent);
-}
-.sku-toggle {
-  font-size: 12px; color: var(--text-3);
-  display: flex; align-items: center; gap: 4px;
-}
-.sku-toggle svg {
-  width: 16px; height: 16px;
-  transition: transform 0.2s ease;
-}
-.sku-card.expanded .sku-toggle svg { transform: rotate(180deg); }
-.sku-specs {
-  padding: 0 20px 16px;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px;
-}
-.spec-item {
-  background: var(--surface-2);
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-.spec-label {
-  font-size: 10px; font-weight: 600; color: var(--text-3);
-  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px;
-}
-.spec-value {
-  font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text-1);
-}
-
-.summary-section {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  margin-top: 24px;
-}
-.summary-section h3 {
-  font-size: 13px; font-weight: 600; color: var(--text-3);
-  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px;
-}
-.summary-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px;
-}
-.summary-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-}
-.summary-row:last-child { border-bottom: none; }
-.summary-key { font-size: 13px; color: var(--text-2); }
-.summary-val { font-size: 13px; font-weight: 600; font-family: var(--mono); }
-
-.no-match {
-  text-align: center; padding: 40px 20px;
-}
-.no-match h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-.no-match p { color: var(--text-2); font-size: 14px; line-height: 1.6; }
-
-/* ===== LOADING ===== */
-.loading {
-  display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 100px 20px;
-  color: var(--text-3); font-size: 14px; gap: 16px;
-}
-.spinner {
-  width: 24px; height: 24px;
-  border: 2.5px solid var(--surface-3);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+/* ===== SIDE PANEL ===== */
+.side-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;position:sticky;top:24px;max-height:calc(100vh - 48px);overflow-y:auto}
+.side-panel h2{font-size:16px;font-weight:700;margin-bottom:12px;letter-spacing:-.02em;color:var(--text-1)}
+.side-panel h3{font-size:13px;font-weight:600;margin-top:16px;margin-bottom:6px;color:var(--accent)}
+.side-panel p{font-size:13px;line-height:1.65;color:var(--text-2);margin-bottom:10px}
+.side-panel strong{color:var(--text-1);font-weight:600}
+.side-panel ul,.side-panel ol{font-size:13px;color:var(--text-2);padding-left:18px;margin-bottom:10px;line-height:1.6}
 
 /* ===== PLACEHOLDER ===== */
-.placeholder-card {
-  background: var(--surface);
-  border: 1.5px dashed var(--border);
-  border-radius: var(--radius-lg);
-  padding: 32px; text-align: center;
-}
-.placeholder-card .badge {
-  display: inline-block;
-  font-size: 11px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--amber); background: var(--amber-dim);
-  padding: 4px 10px; border-radius: 4px; margin-bottom: 12px;
-}
-.placeholder-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-.placeholder-card p { font-size: 13px; color: var(--text-3); }
+.placeholder{background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:32px;text-align:center}
+.placeholder .badge{display:inline-block;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--amber);background:var(--amber-dim);padding:3px 10px;border-radius:4px;margin-bottom:10px}
+.placeholder h3{font-size:17px;font-weight:600;margin-bottom:4px}
+.placeholder p{font-size:12px;color:var(--text-3)}
 
-/* ===== TRANSITIONS ===== */
-.fade-enter-active { animation: fade-in 0.22s ease-out; }
-.fade-leave-active { animation: fade-in 0.12s ease-in reverse; }
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+/* ===== RESULTS ===== */
+.result-wrap{animation:slideUp .35s cubic-bezier(.16,1,.3,1)}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.result-header{margin-bottom:24px}
+.result-header h2{font-size:20px;font-weight:700;letter-spacing:-.03em;margin-bottom:2px}
+.result-header p{font-size:13px;color:var(--text-2)}
+
+/* SKU Cards */
+.sku-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:8px;cursor:pointer;transition:all var(--transition)}
+.sku-card:hover{border-color:var(--border-hover)}
+.sku-card.exp{border-color:var(--accent)}
+.sku-top{display:flex;justify-content:space-between;align-items:center;padding:14px 18px}
+.sku-num{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--accent);letter-spacing:.02em}
+.sku-toggle{font-size:11px;color:var(--text-3);display:flex;align-items:center;gap:4px}
+.sku-toggle svg{width:14px;height:14px;transition:transform .2s ease}
+.sku-card.exp .sku-toggle svg{transform:rotate(180deg)}
+
+/* Specs grid */
+.specs-grid{padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
+.spec{background:var(--surface-2);border-radius:6px;padding:9px 11px}
+.spec-k{font-size:9px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:1px}
+.spec-v{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text-1)}
+
+/* Actions bar */
+.actions-bar{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+
+/* Selections summary */
+.summary-box{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-top:20px}
+.summary-box h3{font-size:12px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px}
+@media(max-width:600px){.summary-grid{grid-template-columns:1fr}}
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.s-row:last-child{border-bottom:none}
+.s-key{font-size:12px;color:var(--text-2)}
+.s-val{font-size:12px;font-weight:600;font-family:var(--mono)}
+
+/* STEP file placeholder */
+.step-file-placeholder{background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:28px;text-align:center;margin-top:20px}
+.step-file-placeholder svg{width:48px;height:48px;color:var(--text-3);margin-bottom:10px}
+.step-file-placeholder h4{font-size:14px;font-weight:600;margin-bottom:4px}
+.step-file-placeholder p{font-size:12px;color:var(--text-3)}
+
+/* Contact form */
+.contact-section{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-top:20px}
+.contact-section h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.contact-section .sub{font-size:12px;color:var(--text-3);margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em}
+.form-group input{background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius);padding:9px 12px;font-family:var(--sans);font-size:13px;color:var(--text-1);outline:none;transition:border var(--transition)}
+.form-group input:focus{border-color:var(--accent)}
+.form-group input::placeholder{color:var(--text-3)}
+.form-submit{margin-top:14px;display:flex;justify-content:flex-end;align-items:center;gap:12px}
+.submit-msg{font-size:12px;color:var(--green)}
+
+/* No match */
+.no-match{text-align:center;padding:40px 20px}
+.no-match h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.no-match p{color:var(--text-2);font-size:13px;line-height:1.6}
+
+/* Loading */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 20px;color:var(--text-3);font-size:13px;gap:14px}
+.spinner{width:22px;height:22px;border:2.5px solid var(--surface-3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Upload fallback */
+.upload-overlay{position:fixed;inset:0;background:rgba(12,13,16,.95);display:flex;align-items:center;justify-content:center;z-index:9999;text-align:center}
+.upload-box{max-width:400px}
+.upload-box h2{font-size:20px;font-weight:700;margin-bottom:8px}
+.upload-box p{font-size:13px;color:var(--text-2);margin-bottom:20px}
+.upload-box label{display:inline-block;padding:11px 26px;background:var(--accent);color:#fff;border-radius:var(--radius);cursor:pointer;font-weight:600;font-size:13px}
+.upload-box input{display:none}
+
+/* Transitions */
+.fade-enter-active{animation:fadeIn .22s ease-out}
+.fade-leave-active{animation:fadeIn .12s ease-in reverse}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
+
 <div id="app">
-  <div class="app">
-    <!-- HEADER -->
-    <div class="app-header">
-      <div class="app-logo">F6</div>
-      <div class="app-title">Product Selector<span>v1.0</span></div>
-    </div>
+<div class="app-wrapper">
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="app-logo">PS</div>
+    <div class="app-title">Product Selector<span>v2.0</span></div>
+  </div>
 
-    <!-- LOADING -->
-    <div v-if="state === 'loading'" class="loading">
-      <div class="spinner"></div>
-      <span>Loading product data…</span>
-    </div>
+  <!-- LOADING -->
+  <div v-if="state==='loading'" class="loading">
+    <div class="spinner"></div>
+    <span>Loading product data…</span>
+  </div>
 
-    <!-- ACTIVE FORM -->
-    <template v-if="state === 'active'">
-      <!-- PROGRESS -->
-      <div class="progress">
-        <div class="progress-bar-track">
-          <div v-for="(s, i) in steps" :key="i" class="progress-seg"
-               :class="{ done: i < currentIndex, active: i === currentIndex }"></div>
+  <!-- UPLOAD FALLBACK -->
+  <div v-if="state==='upload'" class="upload-overlay">
+    <div class="upload-box">
+      <h2>Load Product Data</h2>
+      <p>Drop your CSV file here or click to browse.</p>
+      <label>
+        Choose CSV File
+        <input type="file" accept=".csv" @change="handleFileUpload" />
+      </label>
+    </div>
+  </div>
+
+  <!-- ========== ACTIVE FORM ========== -->
+  <template v-if="state==='active'">
+    <div class="main-grid">
+      <div class="main-col">
+        <!-- Progress -->
+        <div class="progress">
+          <div class="progress-track">
+            <div v-for="(s,i) in steps" :key="i" class="progress-seg"
+                 :class="{done:i<idx,active:i===idx}"></div>
+          </div>
+          <div class="progress-meta">
+            <span class="progress-label">Step {{idx+1}} of {{steps.length}}</span>
+            <span class="match-badge" :class="matchClass">{{matchCount}} match{{matchCount!==1?'es':''}}</span>
+          </div>
         </div>
-        <div class="progress-meta">
-          <span class="progress-label">{{ steps[currentIndex].label }}</span>
-          <span class="match-count" :class="{ warn: matchCount <= 20, danger: matchCount <= 5 }">
-            {{ matchCount }} match{{ matchCount !== 1 ? 'es' : '' }}
-          </span>
-        </div>
+
+        <!-- Step Content -->
+        <transition name="fade" mode="out-in">
+          <div :key="idx">
+            <div class="step-num">STEP {{idx+1}}</div>
+            <div class="step-title">{{cur.label}}</div>
+            <div v-if="cur.desc" class="step-desc">{{cur.desc}}</div>
+
+            <!-- Normal step -->
+            <template v-if="cur.type!=='placeholder'">
+              <!-- Power unit picker -->
+              <div v-if="cur.id==='power'" class="unit-row">
+                <button v-for="u in ['KW','HP']" :key="u"
+                        class="unit-btn" :class="{on:powerUnit===u}"
+                        @click="switchPowerUnit(u)">{{u}}</button>
+              </div>
+              <div v-if="opts.length===1" class="single-note">Only one option available — auto-selected.</div>
+              <div class="options">
+                <div v-for="o in opts" :key="o" class="opt"
+                     :class="{sel:sels[cur.id]===o,only:opts.length===1}"
+                     @click="pick(cur.id,o)">
+                  <div class="opt-radio"></div>
+                  <div class="opt-label">{{o}}</div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Placeholder step -->
+            <template v-else>
+              <div class="placeholder">
+                <div class="badge">Coming Soon</div>
+                <h3>{{cur.label}}</h3>
+                <p>{{cur.placeholderText}}</p>
+              </div>
+            </template>
+
+            <!-- Nav -->
+            <div class="nav">
+              <button class="btn btn-ghost" :disabled="idx===0" @click="back">← Back</button>
+              <button class="btn btn-primary" :disabled="!canNext" @click="next">
+                {{isLast?'Show Results':'Next →'}}
+              </button>
+            </div>
+          </div>
+        </transition>
       </div>
 
-      <!-- STEP -->
-      <transition name="fade" mode="out-in">
-        <div :key="currentIndex">
-          <!-- Normal steps -->
-          <template v-if="currentStep.type !== 'placeholder'">
-            <div class="step-header">
-              <div class="step-number">STEP {{ currentIndex + 1 }} / {{ steps.length }}</div>
-              <div class="step-title">{{ currentStep.label }}</div>
-              <div v-if="currentStep.desc" class="step-desc">{{ currentStep.desc }}</div>
-            </div>
+      <!-- SIDE PANEL -->
+      <div class="side-panel" v-html="sideHtml"></div>
+    </div>
+  </template>
 
-            <!-- Power step: unit picker -->
-            <div v-if="currentStep.id === 'power'" class="power-unit-row">
-              <button v-for="u in ['KW','HP','KVA']" :key="u"
-                      class="unit-btn" :class="{ active: powerUnit === u }"
-                      @click="powerUnit = u">{{ u }}</button>
-            </div>
+  <!-- ========== RESULTS ========== -->
+  <template v-if="state==='results'">
+    <div class="main-grid">
+      <div class="main-col">
+        <div class="result-wrap">
+          <div class="result-header">
+            <h2 v-if="final.length>0">{{final.length===1?'Your Product':'Select Your Product'}}</h2>
+            <p v-if="final.length>1">{{final.length}} products match your criteria</p>
+          </div>
 
-            <!-- Single option note -->
-            <div v-if="currentOptions.length === 1" class="single-note">
-              Only one option available based on your selections — auto-selected.
-            </div>
+          <!-- No match -->
+          <div v-if="final.length===0" class="no-match">
+            <h3>No exact match found</h3>
+            <p>Your combination of selections doesn't match any product.<br>Try going back and adjusting your choices.</p>
+            <button class="btn btn-primary" style="margin-top:16px" @click="restart">Start Over</button>
+          </div>
 
-            <!-- Options list -->
-            <div class="options">
-              <div v-for="opt in currentOptions" :key="opt"
-                   class="option"
-                   :class="{
-                     selected: selections[currentStep.id] === opt,
-                     'single-option': currentOptions.length === 1
-                   }"
-                   @click="select(currentStep.id, opt)">
-                <div class="option-radio"></div>
-                <div>
-                  <div class="option-text">{{ opt }}</div>
+          <!-- SKU cards -->
+          <div v-for="(p,pi) in final" :key="p['Part Number']">
+            <div class="sku-card" :class="{exp:expSku===pi}" @click="expSku=expSku===pi?-1:pi">
+              <div class="sku-top">
+                <div class="sku-num">{{p['Part Number']}}</div>
+                <div class="sku-toggle">
+                  {{expSku===pi?'Hide':'Show'}} specs
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+              </div>
+              <div v-if="expSku===pi" class="specs-grid">
+                <div class="spec" v-for="sc in specCols" :key="sc">
+                  <div class="spec-k">{{fmtLabel(sc)}}</div>
+                  <div class="spec-v">{{p[sc]||'—'}}</div>
                 </div>
               </div>
             </div>
-          </template>
+          </div>
 
-          <!-- Placeholder step (Safety) -->
-          <template v-else>
-            <div class="step-header">
-              <div class="step-number">STEP {{ currentIndex + 1 }} / {{ steps.length }}</div>
-              <div class="step-title">{{ currentStep.label }}</div>
-            </div>
-            <div class="placeholder-card">
-              <div class="badge">Coming Soon</div>
-              <h3>{{ currentStep.label }}</h3>
-              <p>{{ currentStep.placeholderText }}</p>
-            </div>
-          </template>
-
-          <!-- NAV -->
-          <div class="nav" style="margin-top: 24px;">
-            <button class="btn btn-ghost" :disabled="currentIndex === 0" @click="back">
-              ← Back
+          <!-- Action buttons -->
+          <div v-if="final.length>0" class="actions-bar">
+            <button class="btn btn-outline" @click="downloadPdf">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download PDF
             </button>
-            <button class="btn btn-primary"
-                    :disabled="!canAdvance"
-                    @click="next">
-              {{ isLastStep ? 'Show Results' : 'Next →' }}
+            <button class="btn btn-outline" @click="restart">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              Start Over
             </button>
           </div>
-        </div>
-      </transition>
-    </template>
 
-    <!-- RESULTS -->
-    <template v-if="state === 'results'">
-      <div class="result-container">
-        <div class="result-header">
-          <h2 v-if="finalProducts.length > 0">
-            {{ finalProducts.length === 1 ? 'Your Product' : 'Select Your Product' }}
-          </h2>
-          <p v-if="finalProducts.length > 1">{{ finalProducts.length }} products match your criteria</p>
-        </div>
-
-        <!-- No match -->
-        <div v-if="finalProducts.length === 0" class="no-match">
-          <h3>No exact match found</h3>
-          <p>Your combination of selections doesn't match any product in the catalog.<br>
-          Try going back and adjusting your choices.</p>
-          <button class="btn btn-primary" style="margin-top:20px" @click="restart">Start Over</button>
-        </div>
-
-        <!-- SKU cards -->
-        <div v-for="(p, pi) in finalProducts" :key="p['Part Number']">
-          <div class="sku-card" :class="{ expanded: expandedSku === pi }" @click="expandedSku = expandedSku === pi ? -1 : pi">
-            <div class="sku-top">
-              <div class="sku-number">{{ p['Part Number'] }}</div>
-              <div class="sku-toggle">
-                {{ expandedSku === pi ? 'Hide' : 'Show' }} specs
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </div>
-            </div>
-            <div v-if="expandedSku === pi" class="sku-specs">
-              <div class="spec-item" v-for="spec in specColumns" :key="spec">
-                <div class="spec-label">{{ formatSpecLabel(spec) }}</div>
-                <div class="spec-value">{{ p[spec] }}</div>
+          <!-- Selections summary -->
+          <div v-if="final.length>0" class="summary-box">
+            <h3>Your Selections</h3>
+            <div class="summary-grid">
+              <div class="s-row" v-for="s in doneSteps" :key="s.id">
+                <span class="s-key">{{s.label}}</span>
+                <span class="s-val">{{dispSel(s)}}</span>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Selections summary -->
-        <div class="summary-section" v-if="finalProducts.length > 0">
-          <h3>Your Selections</h3>
-          <div class="summary-grid">
-            <div class="summary-row" v-for="s in completedSteps" :key="s.id">
-              <span class="summary-key">{{ s.label }}</span>
-              <span class="summary-val">{{ displaySelection(s) }}</span>
+          <!-- 3D STEP file placeholder -->
+          <div v-if="final.length>0" class="step-file-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+            <h4>3D STEP File</h4>
+            <p>A downloadable 3D STEP model for this product will be available here in a future update.</p>
+          </div>
+
+          <!-- Contact form -->
+          <div v-if="final.length>0" class="contact-section">
+            <h3>Contact a Sales Representative</h3>
+            <div class="sub">Fill out the form below and a member of our team will be in touch.</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Name</label>
+                <input v-model="contact.name" placeholder="Your full name" />
+              </div>
+              <div class="form-group">
+                <label>Company</label>
+                <input v-model="contact.company" placeholder="Company name" />
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input v-model="contact.email" type="email" placeholder="you@company.com" />
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input v-model="contact.phone" type="tel" placeholder="+1 (555) 123-4567" />
+              </div>
+            </div>
+            <div class="form-submit">
+              <span v-if="formSent" class="submit-msg">✓ Submitted — we'll be in touch!</span>
+              <button class="btn btn-primary" :disabled="!canSubmit" @click="submitForm">Submit</button>
             </div>
           </div>
-        </div>
 
-        <div class="nav" style="margin-top: 28px;">
-          <button class="btn btn-ghost" @click="back">← Back</button>
-          <button class="btn btn-primary" @click="restart">Start Over</button>
+          <!-- Bottom nav -->
+          <div class="nav" style="margin-top:20px">
+            <button class="btn btn-ghost" @click="backFromResults">← Back</button>
+          </div>
         </div>
       </div>
-    </template>
-  </div>
+
+      <!-- Side panel on results too -->
+      <div class="side-panel">
+        <h2>Product Specifications</h2>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6">
+          Click on a product card to expand its full specifications.
+          Use the <strong>Download PDF</strong> button to save a spec sheet
+          for your records or to share with your team.
+        </p>
+        <h3>Need Help?</h3>
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6">
+          Fill out the contact form below the product results and a sales
+          engineer will follow up to assist with your application.
+        </p>
+      </div>
+    </div>
+  </template>
+</div>
 </div>
 
 <script>
-const { createApp, ref, computed, watch, onMounted } = Vue;
+const {createApp,ref,computed,watch,onMounted,nextTick} = Vue;
+
+/* ============================================================
+   Markdown content for each step (loaded from files at runtime,
+   with these as fallbacks). To customise, edit the .md files in
+   the content/ folder alongside this HTML file.
+   ============================================================ */
+const STEP_CONTENT = {
+voltage: `## Selecting Your Input Voltage
+
+The input voltage is determined by the power supply available at your installation site. This is typically the first and most critical decision in sizing your drive.
+
+### Common Configurations
+
+**230V 3-Phase** is the standard industrial supply for smaller motor applications. It is widely available in most manufacturing environments and suitable for drives up to medium power ranges.
+
+**400V 3-Phase** is the most common configuration for industrial applications in Europe and many global markets. It supports the full range of power ratings and is recommended for applications above 30 kW.
+
+**230V 1-Phase** is available for lower power applications where three-phase supply is not accessible. This is common in light commercial or workshop environments.
+
+### Things to Consider
+
+Ensure your facility's electrical infrastructure matches the voltage you select. Mismatched voltage ratings can result in equipment damage or reduced performance.`,
+
+power: `## Choosing the Right Power Rating
+
+Select the power rating that matches your motor's nameplate specifications. You can search by kilowatts (KW) or horsepower (HP).
+
+### How to Determine Power Requirements
+
+Check the nameplate on your motor for its rated power output. The drive's power rating should match or slightly exceed the motor's rated power.
+
+### KW vs HP
+
+**Kilowatts (KW)** are the standard unit of measure in IEC regions, including Europe and most of Asia.
+
+**Horsepower (HP)** is the standard unit in NEMA regions, primarily North America.
+
+### Derating Considerations
+
+At higher ambient temperatures or altitudes above 1000m, you may need to select a higher power rating. Consult the product technical manual for derating curves.`,
+
+type: `## Selecting the Drive Type
+
+The drive type determines the core topology and feature set of the product platform.
+
+### Available Types
+
+**F6** is the standard frequency inverter for general-purpose industrial applications such as fans, pumps, conveyors, and compressors.
+
+**S6** is the servo-grade variant designed for high-dynamic applications requiring precise positioning, speed regulation, and torque control.
+
+### Which Type Do I Need?
+
+Choose F6 for general industrial loads. Choose S6 for CNC machines, robotics, packaging machinery, and applications requiring fast response and high positioning accuracy.`,
+
+emi: `## EMI Filter Options
+
+Electromagnetic interference (EMI) filters reduce conducted emissions from the drive back into the power supply network.
+
+### Options
+
+**None** — No integrated EMI filter. Suitable for dedicated industrial networks where EMC is managed at the system level.
+
+**Integrated** — A built-in EMI filter simplifies installation and ensures compliance with EN 61800-3 Category C2 without additional external components.
+
+### When Is an EMI Filter Required?
+
+In most European installations, CE marking requires EMC compliance. An integrated filter is the simplest path to meeting these requirements.`,
+
+heatsink: `## Heatsink & Mounting Configuration
+
+The heatsink configuration determines how the drive dissipates heat and how it is physically installed in your enclosure or cabinet.
+
+### Cooling Methods
+
+**Air** — Standard forced-air cooling using an integrated fan. Suitable for most cabinet installations.
+
+**Air (Convection)** — Passive convection cooling without a fan. Ideal where fan noise or maintenance is a concern.
+
+**Water** — Liquid-cooled heatsink for high power density installations. Reduces cabinet thermal load significantly.
+
+**Oil** — Oil-cooled configuration for specialized harsh industrial environments.
+
+### Mounting Types
+
+**Panel** — Standard panel mounting fully inside an electrical cabinet.
+
+**Push-Through** — Heatsink protrudes through the cabinet back, dissipating heat outside the enclosure.
+
+**Book** — Compact side-by-side mounting that minimizes cabinet width.`,
+
+overload: `## Overload Characteristic
+
+The rated switching frequency determines the drive's overload capability and output current waveform quality.
+
+### Available Ratings
+
+**2 kHz** — Highest overload capacity. Best for heavy-duty applications with frequent transients.
+
+**4 kHz** — Standard for most industrial applications. Good balance of waveform quality and overload capability.
+
+**6 kHz** — Improved motor current quality and reduced audible motor noise.
+
+**8 kHz** — Smoothest output waveform and lowest motor noise. Ideal where acoustic performance is critical.
+
+### Trade-off
+
+Higher switching frequencies improve motor efficiency and reduce noise, but increase drive losses and reduce maximum overload current.`,
+
+control: `## Control Board Selection
+
+The control board determines the communication interface and I/O capabilities of the drive.
+
+### Options
+
+**A1** — Basic analog/digital I/O control board with standard inputs for speed reference, start/stop, and status outputs.
+
+**A3** — Enhanced I/O with additional channels for more complex standalone applications.
+
+**K1** — CANopen fieldbus control board for CAN-based automation networks.
+
+**P5-3 / P5-4 / P5-5** — PROFINET, EtherCAT, and EtherNet/IP fieldbus boards for modern PLC-based automation.
+
+### How to Choose
+
+Select the board matching your PLC's fieldbus protocol. For simple applications without a PLC, A1 or A3 provide straightforward hardwired control.`,
+
+safety: `## Safety Options
+
+Functional safety options enable the drive to perform safety-related functions in compliance with machinery safety standards.
+
+### Coming Soon
+
+Safety option selection is under development. Please contact your sales representative for guidance on available safety options.
+
+### Overview
+
+Integrated safety functions such as Safe Torque Off (STO), Safe Stop 1 (SS1), and Safe Limited Speed (SLS) can be built into the drive, reducing external wiring complexity.`
+};
 
 createApp({
-  setup() {
-    // ---- STATE ----
+  setup(){
     const state = ref('loading');
     const allProducts = ref([]);
-    const currentIndex = ref(0);
-    const selections = ref({});
+    const idx = ref(0);
+    const sels = ref({});
     const powerUnit = ref('KW');
-    const expandedSku = ref(0);
+    const expSku = ref(0);
+    const sideHtml = ref('');
+    const formSent = ref(false);
+    const contact = ref({name:'',company:'',email:'',phone:''});
 
-    // ---- STEP DEFINITIONS ----
     const steps = [
-      { id: 'voltage',    label: 'Pick Voltage',                   col: 'Voltage' },
-      { id: 'power',      label: 'Pick Power',                     col: null, desc: 'Choose a unit first, then select a power rating.' },
-      { id: 'type',       label: 'Pick Type',                      col: 'Type' },
-      { id: 'emi',        label: 'Pick EMI Option',                col: 'EMI' },
-      { id: 'housing',    label: 'Pick Housing',                   col: 'Housing' },
-      { id: 'gtr7',       label: 'Pick GTR7 Option',               col: 'GTR7' },
-      { id: 'heatsink',   label: 'Pick Heatsink',                  col: null, desc: 'Heatsink is determined by cooling method and mounting type.' },
-      { id: 'overload',   label: 'Pick Overload Characteristic',   col: 'Rated_kHz', desc: 'Select the rated switching frequency.' },
-      { id: 'control',    label: 'Pick Control',                   col: null, desc: 'Select the control interface.' },
-      { id: 'safety',     label: 'Pick Safety',                    type: 'placeholder', placeholderText: 'Safety options will be available in a future update. Click Next to continue.' },
+      {id:'voltage',  label:'Pick Voltage',                col:'Voltage'},
+      {id:'power',    label:'Pick Power Rating',            col:null, desc:'Choose a unit first, then select a power rating.'},
+      {id:'type',     label:'Pick Type',                    col:'Type'},
+      {id:'emi',      label:'Pick EMI Option',              col:'EMI'},
+      {id:'heatsink', label:'Pick Heatsink',                col:null, desc:'Heatsink is determined by cooling method and mounting type.'},
+      {id:'overload', label:'Pick Overload Characteristic', col:'Rated_kHz', desc:'Select the rated switching frequency.'},
+      {id:'control',  label:'Pick Control Board',           col:'Ctrl_Board', desc:'Select the control and communication interface.'},
+      {id:'safety',   label:'Pick Safety Option',           type:'placeholder', placeholderText:'Safety options will be available in a future update. Click Next to continue.'},
     ];
 
-    const powerColMap = { KW: 'Power_KW', HP: 'Power_HP', KVA: 'Power_KVA' };
+    const powerMap = {KW:'Power_KW', HP:'Power_HP'};
+    const specCols = ['Type','Voltage','Cooling','Mounting','EMI','Power_KW','Power_HP',
+      'Irated_IEC_A','Irated_UL_A','I_OC_A','I_OL_A','I_OC_%','I_OL_%',
+      'Rated_kHz','Max_kHz','Ctrl_Board'];
 
-    const specColumns = [
-      'Power_KVA','Power_KW','Power_HP',
-      'Irated_IEC_Amps','Irated_UL_Amps',
-      'I_OL_Amps','I_OC_Amps',
-      'OL2_2kHz_A','OL2_4kHz_A','OL2_8kHz_A','OL2_12kHz_A','OL2_16kHz_A',
-      'I_OC_%','I_OL_%',
-      'OL2_2kHz_%','OL2_4kHz_%','OL2_8kHz_%','OL2_12kHz_%','OL2_16kHz_%',
-      'Rated_kHz','Max_kHz','BaseBlockTime_ms'
-    ];
-
-    // ---- FILTERING ----
-    // Products filtered by all selections UP TO (but not including) a given step index
-    function filteredUpTo(stepIdx) {
-      let products = allProducts.value;
-      for (let i = 0; i < stepIdx; i++) {
-        const step = steps[i];
-        const val = selections.value[step.id];
-        if (val == null) continue;
-
-        if (step.id === 'power') {
-          const col = powerColMap[powerUnit.value];
-          products = products.filter(p => String(p[col]) === String(val));
-        } else if (step.id === 'heatsink') {
-          // val is "cooling | mounting"
-          const [cooling, mounting] = val.split(' | ');
-          products = products.filter(p => p.Cooling === cooling && p.Mounting === mounting);
-        } else if (step.id === 'control' || step.type === 'placeholder') {
-          // These don't filter the CSV
-        } else if (step.col) {
-          products = products.filter(p => String(p[step.col]) === String(val));
+    // ---- Filtering ----
+    function filterTo(n){
+      let p = allProducts.value;
+      for(let i=0;i<n;i++){
+        const s=steps[i], v=sels.value[s.id];
+        if(v==null) continue;
+        if(s.id==='power'){
+          p=p.filter(r=>String(r[powerMap[powerUnit.value]])===String(v));
+        } else if(s.id==='heatsink'){
+          const [c,m]=v.split(' | ');
+          p=p.filter(r=>r.Cooling===c&&r.Mounting===m);
+        } else if(s.type==='placeholder'){
+        } else if(s.col){
+          p=p.filter(r=>String(r[s.col])===String(v));
         }
       }
-      return products;
+      return p;
     }
 
-    const filteredProducts = computed(() => filteredUpTo(currentIndex.value));
-    const matchCount = computed(() => filteredProducts.value.length);
+    const filtered = computed(()=>filterTo(idx.value));
+    const matchCount = computed(()=>filtered.value.length);
+    const matchClass = computed(()=>matchCount.value<=5?'danger':matchCount.value<=20?'warn':'ok');
+    const cur = computed(()=>steps[idx.value]);
+    const isLast = computed(()=>idx.value===steps.length-1);
+    const final = computed(()=>filterTo(steps.length));
 
-    const currentStep = computed(() => steps[currentIndex.value]);
-    const isLastStep = computed(() => currentIndex.value === steps.length - 1);
-
-    // ---- OPTIONS FOR CURRENT STEP ----
-    const currentOptions = computed(() => {
-      const step = currentStep.value;
-      const pool = filteredProducts.value;
-      if (step.type === 'placeholder') return [];
-
-      if (step.id === 'power') {
-        const col = powerColMap[powerUnit.value];
-        const vals = [...new Set(pool.map(p => p[col]))];
-        return vals.sort((a, b) => parseFloat(a) - parseFloat(b)).map(String);
+    const opts = computed(()=>{
+      const s=cur.value, pool=filtered.value;
+      if(s.type==='placeholder') return [];
+      if(s.id==='power'){
+        const col=powerMap[powerUnit.value];
+        const v=[...new Set(pool.map(r=>r[col]))];
+        return v.sort((a,b)=>parseFloat(a)-parseFloat(b)).map(String);
       }
-
-      if (step.id === 'heatsink') {
-        const pairs = new Set();
-        pool.forEach(p => pairs.add(p.Cooling + ' | ' + p.Mounting));
+      if(s.id==='heatsink'){
+        const pairs=new Set();
+        pool.forEach(r=>pairs.add(r.Cooling+' | '+r.Mounting));
         return [...pairs].sort();
       }
-
-      if (step.id === 'control') {
-        return ['CAN', 'EtherCAT'];
-      }
-
-      if (step.col) {
-        const vals = [...new Set(pool.map(p => String(p[step.col])))];
-        // Try numeric sort
-        const allNumeric = vals.every(v => !isNaN(parseFloat(v)));
-        if (allNumeric) return vals.sort((a, b) => parseFloat(a) - parseFloat(b));
-        return vals.sort();
+      if(s.col){
+        const v=[...new Set(pool.map(r=>String(r[s.col])))];
+        const num=v.every(x=>!isNaN(parseFloat(x)));
+        return num?v.sort((a,b)=>parseFloat(a)-parseFloat(b)):v.sort();
       }
       return [];
     });
 
     // Auto-select when only 1 option
-    watch(currentOptions, (opts) => {
-      const step = currentStep.value;
-      if (opts.length === 1 && step.type !== 'placeholder') {
-        selections.value[step.id] = opts[0];
-      }
-    }, { immediate: false });
+    watch(opts,(o)=>{
+      const s=cur.value;
+      if(o.length===1&&s.type!=='placeholder') sels.value[s.id]=o[0];
+    },{flush:'post'});
 
-    // ---- SELECTION ----
-    function select(stepId, val) {
-      const step = steps.find(s => s.id === stepId);
-      if (currentOptions.value.length === 1 && step?.type !== 'placeholder') return; // already auto-selected
-      selections.value[stepId] = val;
-    }
+    function pick(id,v){if(opts.value.length>1) sels.value[id]=v;}
 
-    const canAdvance = computed(() => {
-      const step = currentStep.value;
-      if (step.type === 'placeholder') return true;
-      return selections.value[step.id] != null;
+    const canNext = computed(()=>{
+      const s=cur.value;
+      return s.type==='placeholder'||sels.value[s.id]!=null;
     });
 
-    // ---- NAVIGATION ----
-    function next() {
-      if (isLastStep.value) {
-        state.value = 'results';
-        return;
+    function switchPowerUnit(u){
+      if(u===powerUnit.value) return;
+      delete sels.value['power']; // clear selection when switching units
+      powerUnit.value=u;
+    }
+
+    function next(){
+      if(isLast.value){state.value='results';return;}
+      idx.value++;
+      nextTick(()=>{
+        const o=opts.value, s=steps[idx.value];
+        if(o.length===1&&s.type!=='placeholder') sels.value[s.id]=o[0];
+        loadSideContent();
+      });
+    }
+    function back(){
+      if(idx.value>0){
+        delete sels.value[steps[idx.value].id];
+        idx.value--;
+        loadSideContent();
       }
-      currentIndex.value++;
-      // Auto-select if only one option on the new step
-      Vue.nextTick(() => {
-        const opts = currentOptions.value;
-        const step = steps[currentIndex.value];
-        if (opts.length === 1 && step.type !== 'placeholder') {
-          selections.value[step.id] = opts[0];
-        }
+    }
+    function backFromResults(){state.value='active';loadSideContent();}
+    function restart(){idx.value=0;sels.value={};powerUnit.value='KW';expSku.value=0;formSent.value=false;state.value='active';loadSideContent();}
+
+    const doneSteps = computed(()=>steps.filter(s=>sels.value[s.id]!=null||s.type==='placeholder'));
+    function dispSel(s){
+      if(s.type==='placeholder') return '—';
+      const v=sels.value[s.id];
+      if(s.id==='power') return v+' '+powerUnit.value;
+      return v??'—';
+    }
+    function fmtLabel(c){return c.replace(/_/g,' ').replace(/%/g,'%');}
+
+    // ---- Side panel markdown ----
+    async function loadSideContent(){
+      const id = steps[idx.value].id;
+      let md = STEP_CONTENT[id]||'';
+      // Try fetching from file first
+      try{
+        const r = await fetch('content/step-'+id+'.md');
+        if(r.ok) md = await r.text();
+      }catch(e){}
+      sideHtml.value = marked.parse(md);
+    }
+
+    // ---- PDF ----
+    function downloadPdf(){
+      const {jsPDF} = window.jspdf;
+      const doc = new jsPDF();
+      const product = final.value[expSku.value>=0&&expSku.value<final.value.length?expSku.value:0];
+      if(!product) return;
+
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(40,60,80);
+      doc.text('Product Specification Sheet',14,22);
+
+      // SKU
+      doc.setFontSize(14);
+      doc.setTextColor(74,144,217);
+      doc.text(product['Part Number']||'—',14,34);
+
+      // Selections table
+      doc.setFontSize(11);
+      doc.setTextColor(60,60,60);
+      doc.text('Configuration Summary',14,46);
+
+      const selRows = doneSteps.value.map(s=>[s.label, dispSel(s)]);
+      doc.autoTable({
+        startY:50,
+        head:[['Parameter','Selection']],
+        body:selRows,
+        theme:'grid',
+        headStyles:{fillColor:[74,144,217],fontSize:10},
+        bodyStyles:{fontSize:10},
+        margin:{left:14,right:14}
+      });
+
+      // Specs table
+      const specY = doc.lastAutoTable.finalY+12;
+      doc.setFontSize(11);
+      doc.setTextColor(60,60,60);
+      doc.text('Technical Specifications',14,specY);
+
+      const specRows = specCols.map(c=>[fmtLabel(c), String(product[c]||'—')]);
+      doc.autoTable({
+        startY:specY+4,
+        head:[['Specification','Value']],
+        body:specRows,
+        theme:'grid',
+        headStyles:{fillColor:[74,144,217],fontSize:10},
+        bodyStyles:{fontSize:10},
+        margin:{left:14,right:14}
+      });
+
+      // Footer
+      const fy = doc.lastAutoTable.finalY+10;
+      doc.setFontSize(8);
+      doc.setTextColor(150,150,150);
+      doc.text('Generated by Product Selector — '+new Date().toLocaleDateString(),14,fy);
+
+      doc.save((product['Part Number']||'product')+'-spec-sheet.pdf');
+    }
+
+    // ---- Contact form ----
+    const canSubmit = computed(()=>contact.value.name&&contact.value.email);
+    function submitForm(){
+      // In production, POST to your API here
+      console.log('Contact submission:', JSON.stringify({
+        ...contact.value,
+        selectedProduct: final.value[expSku.value>=0?expSku.value:0]?.['Part Number'],
+        selections: {...sels.value, powerUnit:powerUnit.value}
+      }));
+      formSent.value=true;
+    }
+
+    // ---- File upload fallback ----
+    function handleFileUpload(e){
+      const file=e.target.files[0];
+      if(!file) return;
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        parseCSV(ev.target.result);
+      };
+      reader.readAsText(file);
+    }
+
+    function parseCSV(text){
+      const parsed=Papa.parse(text.trim(),{header:true,skipEmptyLines:true,dynamicTyping:false});
+      allProducts.value=parsed.data;
+      state.value='active';
+      nextTick(()=>{
+        const o=opts.value, s=steps[0];
+        if(o.length===1&&s.type!=='placeholder') sels.value[s.id]=o[0];
+        loadSideContent();
       });
     }
 
-    function back() {
-      if (state.value === 'results') {
-        state.value = 'active';
-        return;
+    // ---- Init ----
+    onMounted(async()=>{
+      let csv='';
+      // Try loading CSV from same directory
+      for(const name of ['data.csv','selector.csv','webselector.csv','selector_xlsx_-_pyexcel_sheet1.csv']){
+        try{
+          const r=await fetch(name);
+          if(r.ok){csv=await r.text();break;}
+        }catch(e){}
       }
-      if (currentIndex.value > 0) {
-        // Clear current selection
-        const step = steps[currentIndex.value];
-        delete selections.value[step.id];
-        currentIndex.value--;
-      }
-    }
-
-    function restart() {
-      currentIndex.value = 0;
-      selections.value = {};
-      powerUnit.value = 'KW';
-      expandedSku.value = 0;
-      state.value = 'active';
-    }
-
-    // ---- RESULTS ----
-    const finalProducts = computed(() => filteredUpTo(steps.length));
-
-    const completedSteps = computed(() =>
-      steps.filter(s => selections.value[s.id] != null || s.type === 'placeholder')
-    );
-
-    function displaySelection(s) {
-      if (s.type === 'placeholder') return '—';
-      const val = selections.value[s.id];
-      if (s.id === 'power') return val + ' ' + powerUnit.value;
-      return val ?? '—';
-    }
-
-    function formatSpecLabel(col) {
-      return col.replace(/_/g, ' ').replace(/%/g, '%');
-    }
-
-    // ---- LOAD CSV ----
-    onMounted(async () => {
-      try {
-        // Try loading from same directory (for deployment alongside the HTML)
-        // In development, you can also put the CSV as a Data URI or fetch from a server
-        let csvText = '';
-        try {
-          const resp = await fetch('selector_xlsx_-_pyexcel_sheet1.csv');
-          if (resp.ok) csvText = await resp.text();
-        } catch (e) {}
-
-        // Fallback: try loading from embedded data attribute
-        if (!csvText) {
-          const el = document.getElementById('csv-data');
-          if (el) csvText = el.textContent;
-        }
-
-        // Fallback: prompt file upload
-        if (!csvText) {
-          csvText = await new Promise((resolve) => {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,17,20,0.95);display:flex;align-items:center;justify-content:center;z-index:9999;';
-            overlay.innerHTML = `
-              <div style="text-align:center;color:#E8EAED;font-family:var(--sans);">
-                <p style="font-size:18px;font-weight:600;margin-bottom:12px;">Load Product Data</p>
-                <p style="font-size:14px;color:#9AA0AB;margin-bottom:20px;">Drop your CSV file here or click to browse</p>
-                <input type="file" id="csv-upload" accept=".csv" style="display:none" />
-                <label for="csv-upload" style="display:inline-block;padding:12px 28px;background:#4A90D9;color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;">Choose CSV File</label>
-              </div>`;
-            document.body.appendChild(overlay);
-            const input = overlay.querySelector('input');
-            input.addEventListener('change', (e) => {
-              const file = e.target.files[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = (ev) => {
-                overlay.remove();
-                resolve(ev.target.result);
-              };
-              reader.readAsText(file);
-            });
-          });
-        }
-
-        const parsed = Papa.parse(csvText.trim(), {
-          header: true,
-          skipEmptyLines: true,
-          dynamicTyping: false, // keep everything as strings for consistent filtering
-        });
-
-        allProducts.value = parsed.data;
-        state.value = 'active';
-
-        // Auto-select first step if only one option
-        Vue.nextTick(() => {
-          const opts = currentOptions.value;
-          if (opts.length === 1) {
-            selections.value[steps[0].id] = opts[0];
-          }
-        });
-
-      } catch (err) {
-        console.error('Failed to load CSV:', err);
+      if(csv){
+        parseCSV(csv);
+      } else {
+        state.value='upload';
       }
     });
 
     return {
-      state, steps, currentIndex, selections, powerUnit, expandedSku,
-      currentStep, currentOptions, filteredProducts, matchCount,
-      canAdvance, isLastStep, finalProducts, completedSteps, specColumns,
-      select, next, back, restart, displaySelection, formatSpecLabel,
+      state,steps,idx,sels,powerUnit,expSku,sideHtml,contact,formSent,
+      cur,opts,filtered,matchCount,matchClass,canNext,isLast,final,doneSteps,specCols,
+      pick,next,back,backFromResults,restart,switchPowerUnit,dispSel,fmtLabel,
+      downloadPdf,canSubmit,submitForm,handleFileUpload,loadSideContent
     };
   }
 }).mount('#app');
