@@ -88,6 +88,26 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height
 .opt-label{font-size:13px;font-weight:500}
 .single-note{font-size:11px;color:var(--text-3);margin-bottom:14px;font-style:italic}
 
+/* ===== CONTROL BOARD CARDS ===== */
+.ctrl-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:24px}
+@media(max-width:600px){.ctrl-cards{grid-template-columns:repeat(2,1fr)}}
+.ctrl-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:all var(--transition)}
+.ctrl-card:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.ctrl-card.unavailable{opacity:.35;pointer-events:none}
+.ctrl-tier{text-align:center;padding:8px 8px 4px;font-size:11px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em}
+.ctrl-badge{text-align:center;padding:5px 8px;margin:0 10px 8px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.02em}
+.ctrl-badge.compact{background:#1a8a8a;color:#b8f0f0}
+.ctrl-badge.application{background:#8a7a1a;color:#f0e8b8}
+.ctrl-badge.pro{background:#8a1a3a;color:#f0b8c8}
+.ctrl-rows{flex:1;padding:0 10px}
+.ctrl-row{padding:7px 0;border-bottom:1px solid var(--border);font-size:10px;color:var(--text-2);line-height:1.45}
+.ctrl-row:last-child{border-bottom:none}
+.ctrl-row-label{font-size:8px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:2px}
+.ctrl-row-val{font-size:11px;color:var(--text-1);font-weight:500}
+.ctrl-select{padding:10px;margin-top:auto}
+.ctrl-select button{width:100%;padding:9px 12px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all var(--transition)}
+.ctrl-select button:hover{background:#5A9DE6;box-shadow:0 4px 12px rgba(74,144,217,.3)}
+
 /* ===== POWER UNIT TOGGLE ===== */
 .unit-row{display:flex;gap:5px;margin-bottom:14px}
 .unit-btn{font-family:var(--mono);font-size:12px;font-weight:500;padding:7px 18px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;transition:all var(--transition)}
@@ -112,6 +132,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height
 .side-panel p{font-size:13px;line-height:1.65;color:var(--text-2);margin-bottom:10px}
 .side-panel strong{color:var(--text-1);font-weight:600}
 .side-panel ul,.side-panel ol{font-size:13px;color:var(--text-2);padding-left:18px;margin-bottom:10px;line-height:1.6}
+.side-panel .shimmer{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.side-panel .shimmer-line{height:12px;background:var(--surface-3);border-radius:4px;animation:shimmer 1.2s ease-in-out infinite alternate}
+.side-panel .shimmer-line.w70{width:70%}
+.side-panel .shimmer-line.w100{width:100%}
+.side-panel .shimmer-line.w85{width:85%}
+.side-panel .shimmer-line.w50{width:50%}
+.side-panel .shimmer-line.h18{height:18px;margin-bottom:4px}
+.side-panel .shimmer-line:nth-child(2){animation-delay:.1s}
+.side-panel .shimmer-line:nth-child(3){animation-delay:.2s}
+.side-panel .shimmer-line:nth-child(4){animation-delay:.3s}
+.side-panel .shimmer-line:nth-child(5){animation-delay:.4s}
+@keyframes shimmer{from{opacity:.4}to{opacity:.7}}
+.side-fade-enter-active{transition:opacity .15s ease}
+.side-fade-leave-active{transition:opacity .1s ease}
+.side-fade-enter-from,.side-fade-leave-to{opacity:0}
 
 /* ===== PLACEHOLDER ===== */
 .placeholder{background:var(--surface);border:1.5px dashed var(--border);border-radius:var(--radius-lg);padding:32px;text-align:center}
@@ -258,15 +293,51 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height
                         class="unit-btn" :class="{on:powerUnit===u}"
                         @click="switchPowerUnit(u)">{{u}}</button>
               </div>
-              <div v-if="opts.length===1" class="single-note">Only one option available — auto-selected.</div>
-              <div class="options">
-                <div v-for="o in opts" :key="o" class="opt"
-                     :class="{sel:sels[cur.id]===o,only:opts.length===1}"
-                     @click="pick(cur.id,o)">
-                  <div class="opt-radio"></div>
-                  <div class="opt-label">{{o}}</div>
+
+              <!-- CONTROL BOARD CARDS (Step 7) -->
+              <template v-if="cur.id==='control'">
+                <div class="ctrl-cards">
+                  <div v-for="card in ctrlCardsFiltered" :key="card.key"
+                       class="ctrl-card" :class="{unavailable:!card.available}">
+                    <div class="ctrl-tier">{{card.tier}}</div>
+                    <div class="ctrl-badge" :class="card.badgeClass">{{card.badge}}</div>
+                    <div class="ctrl-rows">
+                      <div class="ctrl-row">
+                        <div class="ctrl-row-label">Safety Function</div>
+                        <div class="ctrl-row-val">{{card.safety}}</div>
+                      </div>
+                      <div class="ctrl-row">
+                        <div class="ctrl-row-label">Safety Protocol</div>
+                        <div class="ctrl-row-val">{{card.protocol}}</div>
+                      </div>
+                      <div class="ctrl-row">
+                        <div class="ctrl-row-label">Fieldbus</div>
+                        <div class="ctrl-row-val">{{card.fieldbus}}</div>
+                      </div>
+                      <div class="ctrl-row">
+                        <div class="ctrl-row-label">Encoder</div>
+                        <div class="ctrl-row-val">{{card.encoder}}</div>
+                      </div>
+                    </div>
+                    <div class="ctrl-select">
+                      <button @click.stop="pickControl(card.key)">Select {{card.key}}</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </template>
+
+              <!-- DEFAULT OPTIONS (all other steps) -->
+              <template v-else>
+                <div v-if="opts.length===1" class="single-note">Only one option available — auto-selected.</div>
+                <div class="options">
+                  <div v-for="o in opts" :key="o" class="opt"
+                       :class="{sel:sels[cur.id]===o,only:opts.length===1}"
+                       @click="pick(cur.id,o)">
+                    <div class="opt-radio"></div>
+                    <div class="opt-label">{{o}}</div>
+                  </div>
+                </div>
+              </template>
             </template>
 
             <!-- Placeholder step -->
@@ -290,7 +361,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height
       </div>
 
       <!-- SIDE PANEL -->
-      <div class="side-panel" v-html="sideHtml"></div>
+      <div class="side-panel">
+        <div v-if="sideLoading" class="shimmer">
+          <div class="shimmer-line h18 w70"></div>
+          <div class="shimmer-line w100"></div>
+          <div class="shimmer-line w85"></div>
+          <div class="shimmer-line w100"></div>
+          <div class="shimmer-line w50"></div>
+        </div>
+        <div v-else v-html="sideHtml"></div>
+      </div>
     </div>
   </template>
 
@@ -558,6 +638,26 @@ Safety option selection is under development. Please contact your sales represen
 Integrated safety functions such as Safe Torque Off (STO), Safe Stop 1 (SS1), and Safe Limited Speed (SLS) can be built into the drive, reducing external wiring complexity.`
 };
 
+/* Option-specific sidebar content for the heatsink step.
+   Keys are slugified from "cooling | mounting". Files at
+   content/heatsink-{slug}.md take priority over these fallbacks. */
+const HEATSINK_CONTENT = {
+'air-panel': '## Air Cooled — Panel Mount\n\nStandard forced-air cooling with the drive mounted fully inside an electrical cabinet. All heat losses are dissipated within the enclosure.\n\n### When to Choose\n\nThe most common configuration for standard industrial cabinets. Simplest to install and maintain.',
+'air-push-through': '## Air Cooled — Push-Through Mount\n\nForced-air cooling with the heatsink protruding through the rear of the cabinet. Approximately 70% of heat is dissipated outside the enclosure.\n\n### When to Choose\n\nIdeal when cabinet thermal management is a concern or in multi-drive installations.',
+'air-book': '## Air Cooled — Book Mount\n\nCompact side-by-side mounting with zero lateral clearance between drives. Cooling air flows front-to-top.\n\n### When to Choose\n\nBest for space-constrained installations requiring maximum drive density.',
+'air-panel-high-perf': '## Air Cooled — Panel Mount (High Performance)\n\nEnhanced heatsink for operation at higher switching frequencies without derating.\n\n### When to Choose\n\nApplications requiring sustained high switching frequencies or elevated ambient temperatures.',
+'air-convection-push-through': '## Air Cooled (Convection) — Push-Through\n\nPassive convection cooling with no fan. Silent operation with zero fan maintenance.\n\n### When to Choose\n\nLow-noise environments, dusty conditions, or where fan maintenance access is difficult.',
+'water-panel': '## Water Cooled — Panel Mount\n\nLiquid-cooled heatsink reducing cabinet thermal load by up to 95%.\n\n### When to Choose\n\nHigh power density installations, clean rooms, or multi-drive systems with shared coolant.',
+'water-push-through': '## Water Cooled — Push-Through Mount\n\nLiquid cooling with external coolant connections behind the cabinet wall.\n\n### When to Choose\n\nMaximum thermal performance with separation between electrical and fluid connections.',
+'water-panel-high-perf': '## Water Cooled — Panel Mount (High Performance)\n\nOptimized coolant channels for maximum heat extraction at high switching frequencies.\n\n### When to Choose\n\nFull-load operation at maximum switching frequency, or elevated coolant inlet temperatures.',
+'water-push-through-high-perf': '## Water Cooled — Push-Through (High Performance)\n\nTop-tier thermal configuration combining push-through, liquid cooling, and enhanced channels.\n\n### When to Choose\n\nThe most demanding applications requiring absolute maximum continuous current.',
+'oil-push-through': '## Oil Cooled — Push-Through Mount\n\nOil-circuit cooling for extreme industrial environments.\n\n### When to Choose\n\nMining, offshore, steel mills, or explosive atmosphere classifications.',
+};
+
+function heatsinkSlug(opt){
+  return opt.toLowerCase().replace(/[()]/g,'').replace(/\s*\|\s*/g,'-').replace(/\s+/g,'-').replace(/-+/g,'-');
+}
+
 createApp({
   setup(){
     const state = ref('loading');
@@ -567,6 +667,8 @@ createApp({
     const powerUnit = ref('KW');
     const expSku = ref(0);
     const sideHtml = ref('');
+    const sideLoading = ref(false);
+    const contentCache = {};
     const formSent = ref(false);
     const contact = ref({name:'',company:'',email:'',phone:''});
 
@@ -582,6 +684,30 @@ createApp({
     ];
 
     const powerMap = {KW:'Power_KW', HP:'Power_HP'};
+
+    // ---- Control board card metadata ----
+    const ctrlCardData = {
+      'A1':   {tier:'Basic',    badge:'Compact',     badgeClass:'compact',     safety:'STO',                                protocol:'n/a',           fieldbus:'EtherCAT, CANopen',                                                       encoder:'Two Encoder Channels'},
+      'A3':   {tier:'Standard', badge:'Application', badgeClass:'application', safety:'STO',                                protocol:'n/a',           fieldbus:'EtherCAT, CANopen, EtherNet/IP, PROFINET, POWERLINK (ModbusTCP opt.)',     encoder:'Two Encoder Channels'},
+      'K1':   {tier:'Standard', badge:'Pro',         badgeClass:'pro',         safety:'STO + Open loop Safety Functions',   protocol:'FSOE',          fieldbus:'EtherCAT, CANopen, PROFINET, ModbusTCP',                                  encoder:'No Encoder Channels'},
+      'P5-3': {tier:'Standard', badge:'Pro',         badgeClass:'pro',         safety:'STO + Closed loop Safety Functions', protocol:'FSOE',          fieldbus:'EtherCAT, CANopen, PROFINET, ModbusTCP',                                  encoder:'OCT (One Cable Tech.)'},
+      'P5-4': {tier:'High',     badge:'Pro',         badgeClass:'pro',         safety:'STO + Closed loop Safety Functions', protocol:'FSOE',          fieldbus:'CANopen, Ethernet, ModbusTCP, ModbusRTU',                                 encoder:'Two Encoder Channels'},
+      'P5-5': {tier:'High',     badge:'Pro',         badgeClass:'pro',         safety:'STO + Closed loop Safety Functions', protocol:'FSOE',          fieldbus:'EtherCAT, CANopen, PROFINET, ModbusTCP',                                  encoder:'Two Encoder Channels'},
+    };
+
+    // All cards with availability flag based on current filter
+    const ctrlCardsFiltered = computed(()=>{
+      const available = new Set(opts.value);
+      // Show all known cards, mark unavailable ones
+      return Object.entries(ctrlCardData).map(([key,data])=>({
+        key, ...data, available: available.has(key)
+      }));
+    });
+
+    function pickControl(key){
+      sels.value['control'] = key;
+      nextTick(()=>next());
+    }
     const specCols = ['Type','Voltage','Cooling','Mounting','EMI','Power_KW','Power_HP',
       'Irated_IEC_A','Irated_UL_A','I_OC_A','I_OL_A','I_OC_%','I_OL_%',
       'Rated_kHz','Max_kHz','Ctrl_Board'];
@@ -639,7 +765,11 @@ createApp({
       if(o.length===1&&s.type!=='placeholder') sels.value[s.id]=o[0];
     },{flush:'post'});
 
-    function pick(id,v){if(opts.value.length>1) sels.value[id]=v;}
+    function pick(id,v){
+      if(opts.value.length>1) sels.value[id]=v;
+      // Reload sidebar when heatsink option changes
+      if(id==='heatsink') nextTick(()=>loadSideContent());
+    }
 
     const canNext = computed(()=>{
       const s=cur.value;
@@ -680,16 +810,60 @@ createApp({
     }
     function fmtLabel(c){return c.replace(/_/g,' ').replace(/%/g,'%');}
 
-    // ---- Side panel markdown ----
+    // ---- Side panel markdown (cached) ----
+    async function fetchMd(path, fallback){
+      if(contentCache[path]) return contentCache[path];
+      try{
+        const r = await fetch(path);
+        if(r.ok){ const t=await r.text(); contentCache[path]=t; return t; }
+      }catch(e){}
+      contentCache[path]=fallback;
+      return fallback;
+    }
+
+    async function preloadContent(){
+      // Preload all step files
+      const stepIds = steps.map(s=>s.id);
+      const stepFetches = stepIds.map(id=>
+        fetchMd('content/step-'+id+'.md', STEP_CONTENT[id]||'')
+      );
+      // Preload all heatsink option files
+      const hsSlugs = Object.keys(HEATSINK_CONTENT);
+      const hsFetches = hsSlugs.map(slug=>
+        fetchMd('content/heatsink-'+slug+'.md', HEATSINK_CONTENT[slug]||'')
+      );
+      await Promise.allSettled([...stepFetches, ...hsFetches]);
+    }
+
     async function loadSideContent(){
       const id = steps[idx.value].id;
-      let md = STEP_CONTENT[id]||'';
-      // Try fetching from file first
-      try{
-        const r = await fetch('content/step-'+id+'.md');
-        if(r.ok) md = await r.text();
-      }catch(e){}
+
+      // Heatsink step: swap to option-specific content when selected
+      if(id==='heatsink' && sels.value.heatsink){
+        const slug = heatsinkSlug(sels.value.heatsink);
+        const path = 'content/heatsink-'+slug+'.md';
+        // If cached, swap instantly; otherwise show shimmer
+        if(contentCache[path]){
+          sideHtml.value = marked.parse(contentCache[path]);
+          return;
+        }
+        sideLoading.value = true;
+        const md = await fetchMd(path, HEATSINK_CONTENT[slug]||STEP_CONTENT.heatsink||'');
+        sideHtml.value = marked.parse(md);
+        sideLoading.value = false;
+        return;
+      }
+
+      // Default step-level content
+      const path = 'content/step-'+id+'.md';
+      if(contentCache[path]){
+        sideHtml.value = marked.parse(contentCache[path]);
+        return;
+      }
+      sideLoading.value = true;
+      const md = await fetchMd(path, STEP_CONTENT[id]||'');
       sideHtml.value = marked.parse(md);
+      sideLoading.value = false;
     }
 
     // ---- PDF ----
@@ -782,6 +956,7 @@ createApp({
         const o=opts.value, s=steps[0];
         if(o.length===1&&s.type!=='placeholder') sels.value[s.id]=o[0];
         loadSideContent();
+        preloadContent(); // preload all markdown files in background
       });
     }
 
@@ -803,9 +978,10 @@ createApp({
     });
 
     return {
-      state,steps,idx,sels,powerUnit,expSku,sideHtml,contact,formSent,
+      state,steps,idx,sels,powerUnit,expSku,sideHtml,sideLoading,contact,formSent,
       cur,opts,filtered,matchCount,matchClass,canNext,isLast,final,doneSteps,specCols,
-      pick,next,back,backFromResults,restart,switchPowerUnit,dispSel,fmtLabel,
+      ctrlCardsFiltered,
+      pick,pickControl,next,back,backFromResults,restart,switchPowerUnit,dispSel,fmtLabel,
       downloadPdf,canSubmit,submitForm,handleFileUpload,loadSideContent
     };
   }
