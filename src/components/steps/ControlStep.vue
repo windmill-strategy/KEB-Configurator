@@ -3,8 +3,7 @@
     <div
       v-for="card in cards"
       :key="card.key"
-      class="ctrl-card"
-      :class="{ unavailable: !card.available }"
+      :class="[`ctrl-card ctrl-card--tier-${card.tier.toLowerCase() }`, { unavailable: !card.available }]"
     >
       <div class="ctrl-card__tier">{{ card.tier }}</div>
       <div class="ctrl-card__badge" :class="card.badgeClass">{{ card.badge }}</div>
@@ -51,8 +50,8 @@ const cards = computed(() => {
 <style lang="scss" scoped>
 .ctrl-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2rem 1rem;
   margin-bottom: 24px;
 
   @media (max-width: $bp-mobile) {
@@ -68,6 +67,18 @@ const cards = computed(() => {
 
   &:hover {
     @include card-hover;
+  }
+  
+  &--tier-basic {
+    grid-column: span 6;
+  }
+  
+  &--tier-standard {
+    grid-column: span 2;
+  }
+
+  &--tier-high {
+    grid-column: span 3;
   }
 
   &.unavailable {
@@ -102,6 +113,11 @@ const cards = computed(() => {
   &__rows {
     flex: 1;
     padding: 0 10px;
+    .ctrl-card--tier-basic & {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 
   &__row {
