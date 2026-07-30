@@ -9,8 +9,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -336,10 +334,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height
             </div>
           </div>
           <div v-if="final.length>0" class="actions-bar">
-            <button class="btn btn-outline" @click="downloadPdf">
+            <a class="btn btn-outline" :href="selectedPdfUrl" target="_blank" rel="noopener" :style="selectedPdfUrl?'':'pointer-events:none;opacity:.35'">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download PDF
-            </button>
+            </a>
             <button class="btn btn-outline" @click="restart">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
               Start Over
@@ -354,21 +352,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text-1);min-height
               </div>
             </div>
           </div>
-          <div v-if="final.length>0" class="step-file-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-            </svg>
-            <h4>3D STEP File</h4>
-            <p>A downloadable 3D STEP model for this product will be available here in a future update.</p>
-          </div>
           <div v-if="final.length>0" class="contact-section">
-            <h3>Contact a Sales Representative</h3>
-            <div class="sub">Fill out the form below and a member of our team will be in touch.</div>
+            <h3>Download the 3D STEP File</h3>
+            <div class="sub">Fill out the form below to receive the 3D STEP file for your selected product.</div>
             <div class="form-grid">
               <div class="form-group"><label>Name</label><input v-model="contact.name" placeholder="Your full name" /></div>
               <div class="form-group"><label>Company</label><input v-model="contact.company" placeholder="Company name" /></div>
               <div class="form-group"><label>Email</label><input v-model="contact.email" type="email" placeholder="you@company.com" /></div>
               <div class="form-group"><label>Phone</label><input v-model="contact.phone" type="tel" placeholder="+1 (555) 123-4567" /></div>
+              <input type="hidden" :value="selectedStepFile" name="step_file_download" />
             </div>
             <div class="form-submit">
               <span v-if="formSent" class="submit-msg">✓ Submitted — we'll be in touch!</span>
@@ -451,7 +443,7 @@ createApp({
     const allProducts = ref([]);
     const idx = ref(0);
     const sels = ref({});
-    const voltStd = ref('IEC');
+    const voltStd = ref('UL');
     const powerUnit = ref('KW');
     const powerUnits = [{key:'KW',display:'kW'},{key:'HP',display:'Hp'}];
     const expSku = ref(0);
@@ -614,7 +606,7 @@ createApp({
       }
     }
     function backFromResults(){state.value='active';loadSideContent();}
-    function restart(){idx.value=0;sels.value={};voltStd.value='IEC';powerUnit.value='KW';expSku.value=0;formSent.value=false;state.value='active';loadSideContent();}
+    function restart(){idx.value=0;sels.value={};voltStd.value='UL';powerUnit.value='KW';expSku.value=0;formSent.value=false;state.value='active';loadSideContent();}
 
     const doneSteps = computed(()=>steps.filter(s=>sels.value[s.id]!=null));
     function dispSel(s){
@@ -661,32 +653,22 @@ createApp({
       sideHtml.value=marked.parse(md);sideLoading.value=false;
     }
 
-    // ---- PDF ----
-    function downloadPdf(){
-      const{jsPDF}=window.jspdf;
-      const doc=new jsPDF();
-      const product=final.value[expSku.value>=0&&expSku.value<final.value.length?expSku.value:0];
-      if(!product) return;
-      doc.setFontSize(20);doc.setTextColor(40,60,80);
-      doc.text('Product Specification Sheet',14,22);
-      doc.setFontSize(14);doc.setTextColor(74,144,217);
-      doc.text(product.Part_Number||'—',14,34);
-      doc.setFontSize(11);doc.setTextColor(60,60,60);
-      doc.text('Configuration Summary',14,46);
-      doc.autoTable({startY:50,head:[['Parameter','Selection']],body:doneSteps.value.map(s=>[s.label,dispSel(s)]),theme:'grid',headStyles:{fillColor:[74,144,217],fontSize:10},bodyStyles:{fontSize:10},margin:{left:14,right:14}});
-      const specY=doc.lastAutoTable.finalY+12;
-      doc.text('Technical Specifications',14,specY);
-      doc.autoTable({startY:specY+4,head:[['Specification','Value']],body:specCols.map(c=>[fmtLabel(c),String(product[c]||'—')]),theme:'grid',headStyles:{fillColor:[74,144,217],fontSize:10},bodyStyles:{fontSize:10},margin:{left:14,right:14}});
-      const fy=doc.lastAutoTable.finalY+10;
-      doc.setFontSize(8);doc.setTextColor(150,150,150);
-      doc.text('Generated by Product Selector — '+new Date().toLocaleDateString(),14,fy);
-      doc.save((product.Part_Number||'product')+'-spec-sheet.pdf');
-    }
+    // ---- PDF link ----
+    const selectedPdfUrl = computed(()=>{
+      const p = final.value[expSku.value>=0&&expSku.value<final.value.length?expSku.value:0];
+      return p?.Pdf_Dim_File || '';
+    });
+
+    // ---- STEP file for gated download ----
+    const selectedStepFile = computed(()=>{
+      const p = final.value[expSku.value>=0&&expSku.value<final.value.length?expSku.value:0];
+      return p?.Step_File_Download || '';
+    });
 
     // ---- Contact ----
     const canSubmit=computed(()=>contact.value.name&&contact.value.email);
     function submitForm(){
-      console.log('Contact submission:',JSON.stringify({...contact.value,selectedProduct:final.value[expSku.value>=0?expSku.value:0]?.Part_Number,selections:{...sels.value,voltStd:voltStd.value,powerUnit:powerUnit.value}}));
+      console.log('Contact submission:',JSON.stringify({...contact.value,selectedProduct:final.value[expSku.value>=0?expSku.value:0]?.Part_Number,stepFile:selectedStepFile.value,selections:{...sels.value,voltStd:voltStd.value,powerUnit:powerUnit.value}}));
       formSent.value=true;
     }
 
@@ -725,7 +707,7 @@ createApp({
       typeCardsFiltered,ctrlCardsFiltered,
       pick,pickType,pickControl,next,back,backFromResults,restart,
       switchVoltStd,switchPowerUnit,dispSel,fmtLabel,
-      downloadPdf,canSubmit,submitForm,handleFileUpload,loadSideContent
+      selectedPdfUrl,selectedStepFile,canSubmit,submitForm,handleFileUpload,loadSideContent
     };
   }
 }).mount('#app');
