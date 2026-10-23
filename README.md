@@ -41,6 +41,7 @@ product-selector/
 │   │   ├── steps.js                    # Step definitions + column mappings
 │   │   ├── typeCards.js                # F6/S6 card data + image imports
 │   │   ├── controlCards.js             # Control board card metadata
+│   │   ├── files.js                    # PDF / STEP file hosting base URL
 │   │   └── content.js                  # Embedded markdown fallbacks
 │   ├── composables/
 │   │   ├── useProductFilter.js         # Core filtering + navigation logic
@@ -83,3 +84,4 @@ product-selector/
 | Change global button/option styles | `src/styles/main.scss` |
 | Wire up the contact form to an API | `src/components/results/ContactForm.vue` → `submit()` |
 | Update the product data | Replace `public/data.csv` |
+| Set where PDF / STEP files are hosted | `FILE_BASE_URL` in `src/data/files.js` (or the `VITE_FILE_BASE_URL` env var) |

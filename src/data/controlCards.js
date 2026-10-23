@@ -26,6 +26,16 @@ export const CTRL_CARD_DATA = {
     fieldbus: 'EtherCAT, CANopen, PROFINET, ModbusTCP',
     encoder: 'No Encoder Channels',
   },
+  // Placeholder: copied from P5-3 until P5-2 specs are confirmed
+  'P5-2': {
+    tier: 'Standard',
+    badge: 'Pro',
+    badgeClass: 'pro',
+    safety: 'STO + Closed loop Safety Functions',
+    protocol: 'FSOE',
+    fieldbus: 'EtherCAT, CANopen, PROFINET, ModbusTCP',
+    encoder: 'OCT (One Cable Tech.)',
+  },
   'P5-3': {
     tier: 'Standard',
     badge: 'Pro',

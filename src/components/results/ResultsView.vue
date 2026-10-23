@@ -78,6 +78,7 @@ import { ref, computed } from 'vue'
 import SkuCard from './SkuCard.vue'
 import SelectionSummary from './SelectionSummary.vue'
 import ContactForm from './ContactForm.vue'
+import { fileUrl } from '@/data/files'
 
 const props = defineProps({
   products: { type: Array, required: true },
@@ -96,8 +97,8 @@ const selectedProduct = computed(() =>
     : 0] || null,
 )
 
-const selectedPdfUrl = computed(() => selectedProduct.value?.Pdf_Dim_File || '')
-const selectedStepFile = computed(() => selectedProduct.value?.Step_File_Download || '')
+const selectedPdfUrl = computed(() => fileUrl(selectedProduct.value?.Pdf_Dim_File))
+const selectedStepFile = computed(() => fileUrl(selectedProduct.value?.Step_File))
 </script>
 
 <style lang="scss" scoped>

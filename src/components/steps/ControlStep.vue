@@ -50,7 +50,7 @@ const cards = computed(() => {
 <style lang="scss" scoped>
 .ctrl-cards {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(12, 1fr);
   gap: 2rem 1rem;
   margin-bottom: 24px;
 
@@ -70,15 +70,26 @@ const cards = computed(() => {
   }
   
   &--tier-basic {
-    grid-column: span 6;
+    grid-column: span 12;
   }
   
   &--tier-standard {
-    grid-column: span 2;
+    grid-column: span 3;
   }
 
   &--tier-high {
-    grid-column: span 3;
+    grid-column: span 6;
+  }
+
+  @media (max-width: $bp-mobile) {
+    &--tier-basic {
+      grid-column: span 2;
+    }
+
+    &--tier-standard,
+    &--tier-high {
+      grid-column: span 1;
+    }
   }
 
   &.unavailable {
