@@ -22,7 +22,7 @@
         <label>Phone</label>
         <input v-model="form.phone" type="tel" placeholder="+1 (555) 123-4567" />
       </div>
-      <input type="hidden" :value="stepFile" name="step_file_download" />
+      <input type="hidden" :value="stepFile" name="step_file" />
     </div>
 
     <div class="contact-form__submit">
