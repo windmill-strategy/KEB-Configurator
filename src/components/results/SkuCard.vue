@@ -1,7 +1,7 @@
 <template>
   <div class="sku-card" :class="{ exp: expanded }" @click="$emit('toggle')">
     <div class="sku-card__top">
-      <div class="sku-card__number">{{ product.Part_Number }}</div>
+      <div class="sku-card__number">SKU <span>{{ product.Part_Number }}</span></div>
       <div class="sku-card__toggle">
         {{ expanded ? 'Hide' : 'Show' }} specs
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -61,8 +61,10 @@ function formatLabel(col) {
     font-family: $font-mono;
     font-size: 16px;
     font-weight: 600;
-    color: $accent;
     letter-spacing: 0.02em;
+    span {
+      color: $accent;
+    }
   }
 
   &__toggle {
