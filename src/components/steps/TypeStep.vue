@@ -11,6 +11,7 @@
       <div class="type-card__action">
         <button @click.stop="$emit('pick', card.key)">Select {{ card.key }}</button>
       </div>
+      <p v-if="!card.available" class="type-card__unavailable">Not available in selected power.</p>
     </div>
   </div>
 </template>
@@ -98,9 +99,15 @@ const cards = computed(() => {
       }
     }
   }
+  &__unavailable {
+    text-align: center;
+    padding: 8px;
+    font-size: 14px;
+    color: $text-2;
+  }
 }
 
-@media (max-width: $bp-mobile) {
+@container app-wrapper (max-width: #{$bp-mobile}) {
   .type-cards {
     grid-template-columns: 1fr;
   }

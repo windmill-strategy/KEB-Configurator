@@ -37,7 +37,7 @@ defineProps({
     grid-template-columns: 1fr 1fr;
     gap: 4px 20px;
 
-    @media (max-width: $bp-mobile) {
+    @container app-wrapper (max-width: #{$bp-mobile}) {
       grid-template-columns: 1fr;
     }
   }
