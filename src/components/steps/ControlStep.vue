@@ -14,7 +14,7 @@
         </div>
       </div>
       <div class="ctrl-card__action">
-        <button @click.stop="$emit('pick', card.key)">Select {{ card.key }}</button>
+        <button @click.stop="$emit('pick', card.key)">Select {{ card.code }}</button>
       </div>
     </div>
   </div>
@@ -50,12 +50,16 @@ const cards = computed(() => {
 <style lang="scss" scoped>
 .ctrl-cards {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 2rem 1rem;
   margin-bottom: 24px;
 
-  @media (max-width: $bp-mobile) {
+  @container app-wrapper (max-width: #{$bp-mobile}) {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  @container app-wrapper (max-width: 400px) {
+    grid-template-columns: repeat(1, 1fr);
   }
 }
 
@@ -69,26 +73,29 @@ const cards = computed(() => {
     @include card-hover;
   }
   
-  &--tier-basic {
-    grid-column: span 12;
-  }
+  // &--tier-basic {
+  //   grid-column: span 12;
+  // }
   
   &--tier-standard {
-    grid-column: span 3;
+    // grid-column: span 3;
+    grid-row-start: 2;
   }
 
   &--tier-high {
-    grid-column: span 6;
+    // grid-column: span 6;
+    grid-row-start: 3;
   }
 
-  @media (max-width: $bp-mobile) {
-    &--tier-basic {
-      grid-column: span 2;
-    }
+  @container app-wrapper (max-width: #{$bp-mobile}) {
+  //   &--tier-basic {
+  //     grid-column: span 2;
+  //   }
 
     &--tier-standard,
     &--tier-high {
-      grid-column: span 1;
+      // grid-column: span 1;
+      grid-row-start: auto;
     }
   }
 
@@ -124,11 +131,11 @@ const cards = computed(() => {
   &__rows {
     flex: 1;
     padding: 0 10px;
-    .ctrl-card--tier-basic & {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: repeat(4, 1fr);
-    }
+    // .ctrl-card--tier-basic & {
+    //   display: grid;
+    //   gap: 1rem;
+    //   grid-template-columns: repeat(4, 1fr);
+    // }
   }
 
   &__row {

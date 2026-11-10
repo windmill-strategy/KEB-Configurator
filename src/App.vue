@@ -58,6 +58,13 @@
                 :options="opts"
                 @pick="onPickAndAdvance('control', $event)"
               />
+              
+              <OverloadStep
+                v-else-if="cur.id === 'overload'"
+                :options="opts"
+                :selected="sels[cur.id]"
+                @pick="onPickAndAdvance('overload', $event)"
+                />
 
               <DefaultStep
                 v-else
@@ -115,6 +122,7 @@ import VoltageStep from '@/components/steps/VoltageStep.vue'
 import PowerStep from '@/components/steps/PowerStep.vue'
 import TypeStep from '@/components/steps/TypeStep.vue'
 import ControlStep from '@/components/steps/ControlStep.vue'
+import OverloadStep from '@/components/steps/OverloadStep.vue'
 import DefaultStep from '@/components/steps/DefaultStep.vue'
 import ResultsView from '@/components/results/ResultsView.vue'
 
@@ -174,6 +182,7 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .app-wrapper {
+  container: app-wrapper / inline-size;
   max-width: $max-width;
   margin: 0 auto;
   padding: 24px 20px 100px;
@@ -185,7 +194,7 @@ onMounted(async () => {
   gap: 28px;
   align-items: start;
 
-  @media (max-width: $bp-tablet) {
+  @container app-wrapper (max-width: #{$bp-tablet}) {
     grid-template-columns: 1fr;
 
     :deep(.side-panel) {

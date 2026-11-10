@@ -86,7 +86,7 @@ function submit() {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
 
-    @media (max-width: $bp-mobile) {
+    @container app-wrapper (max-width: #{$bp-mobile}) {
       grid-template-columns: 1fr;
     }
   }
