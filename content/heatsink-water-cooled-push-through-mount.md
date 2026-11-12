@@ -1,4 +1,4 @@
--e ## Water Cooled — Push-Through Mount
+## Water Cooled — Push-Through Mount
 
 Liquid cooling with the cooling block protruding through the rear of the cabinet.
 

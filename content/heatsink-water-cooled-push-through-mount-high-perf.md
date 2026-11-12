@@ -1,4 +1,4 @@
--e ## Water Cooled — Push-Through Mount (High Performance)
+## Water Cooled — Push-Through Mount (High Performance)
 
 Premium liquid cooling with push-through mounting and enhanced heatsink.
 

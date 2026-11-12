@@ -1,4 +1,4 @@
--e ## Air Cooled — Push-Through Mount
+## Air Cooled — Push-Through Mount
 
 Forced-air cooling with the heatsink protruding through the rear of the cabinet enclosure.
 

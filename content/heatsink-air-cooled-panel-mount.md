@@ -1,4 +1,4 @@
--e ## Air Cooled — Panel Mount
+## Air Cooled — Panel Mount
 
 Standard forced-air cooling with the drive mounted fully inside an electrical cabinet. All heat losses are dissipated within the enclosure.
 

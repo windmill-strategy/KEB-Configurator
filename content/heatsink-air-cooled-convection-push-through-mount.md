@@ -1,4 +1,4 @@
--e ## Air Cooled (Convection) — Push-Through Mount
+## Air Cooled (Convection) — Push-Through Mount
 
 Passive convection cooling with no internal fan. Silent operation with zero fan maintenance.
 

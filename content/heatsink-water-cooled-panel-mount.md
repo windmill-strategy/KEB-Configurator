@@ -1,4 +1,4 @@
--e ## Water Cooled — Panel Mount
+## Water Cooled — Panel Mount
 
 Liquid-cooled heatsink with the drive mounted inside the cabinet enclosure.
 

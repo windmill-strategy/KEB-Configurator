@@ -1,4 +1,4 @@
--e ## Water Cooled — Panel Mount (High Performance)
+## Water Cooled — Panel Mount (High Performance)
 
 Enhanced liquid cooling with optimized coolant channel design for maximum heat extraction.
 

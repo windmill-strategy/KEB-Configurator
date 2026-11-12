@@ -1,4 +1,4 @@
--e ## Air Cooled — Panel Mount (High Performance)
+## Air Cooled — Panel Mount (High Performance)
 
 Enhanced forced-air cooling with an oversized heatsink for improved thermal performance.
 

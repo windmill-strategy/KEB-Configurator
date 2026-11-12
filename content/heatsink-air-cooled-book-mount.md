@@ -1,4 +1,4 @@
--e ## Air Cooled — Book Mount
+## Air Cooled — Book Mount
 
 Compact side-by-side mounting format designed to minimize cabinet width requirements.
 
