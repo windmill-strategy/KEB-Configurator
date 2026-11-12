@@ -1,0 +1,56 @@
+@use 'sass:color';
+// ===== Colors =====
+$bg:           var(--bedstone-palette-bg, #0C0D10);
+$surface:      var(--wp--preset--color--almost-white, #15171C);
+$surface-2:    var(--wp--preset--color--light-gray, #1C1F26);
+$surface-3:    var(--wp--preset--color--light-gray, #24282F);
+$border:       var(--wp--preset--color--light-gray, #2A2E37);
+$border-hover: var(--wp--preset--color--gray, #3A3F4A);
+$border-active: var(--wp--preset--color--red, #4A90D9);
+$text-1:       var(--bedstone-palette-text, #E8EAED);
+$text-2:       var(--wp--preset--color--gray, #9AA0AB);
+$text-3:       var(--wp--preset--color--black, #5F6672);
+$accent:       var(--wp--preset--color--red, #4A90D9);
+$accent-dim:   rgba(74, 144, 217, 0.10);
+$accent-mid:   rgba(74, 144, 217, 0.22);
+$green:        #34D399;
+$green-dim:    color.scale($green, $lightness: -80%); //rgba(52, 211, 153, 0.10);
+$amber:        #FBBF24;
+$amber-dim:    color.scale($amber, $lightness: -80%); //rgba(251, 191, 36, 0.10);
+$red:          #F87171;
+$red-dim:      color.scale($red, $lightness: -80%); //rgba(72, 21, 21, 0.1);
+
+// ===== Typography =====
+$font-mono: var(--font-mono, 'IBM Plex Mono', monospace);
+$font-sans: var(--font, 'IBM Plex Sans', -apple-system, sans-serif);
+
+// ===== Layout =====
+$radius:    8px;
+$radius-lg: 12px;
+$transition: 0.18s ease;
+$max-width: 1200px;
+
+// ===== Breakpoints =====
+$bp-tablet: 920px;
+$bp-mobile: 600px;
+
+// ===== Mixins =====
+@mixin card {
+  background: $surface;
+  border: 1.5px solid $border;
+  border-radius: $radius-lg;
+  transition: all $transition;
+}
+
+@mixin card-hover {
+  border-color: $border-hover;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+@mixin mono-label {
+  font-family: $font-mono;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
